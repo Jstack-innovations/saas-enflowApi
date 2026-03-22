@@ -1,10 +1,6 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . "/../../vendor/autoload.php";
-
-$mailConfig = require __DIR__ . "/../../SECURE/mail_config.php";
+require_once __DIR__ . '/../../SECURE/gmail_mailer.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
@@ -16,7 +12,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-
 $file = __DIR__ . '/../../SECURE/db.php';
 
 if (!file_exists($file)) {
@@ -24,7 +19,6 @@ if (!file_exists($file)) {
 }
 
 require_once $file;
-
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -68,10 +62,8 @@ $user_id = $user['id'];
 $code = rand(1000, 9999);
 $expires_at = date("Y-m-d H:i:s", strtotime("+5 minutes"));
 
-/* Delete old codes */
 $conn->query("DELETE FROM login_verifications WHERE user_id=$user_id");
 
-/* Insert new code */
 $stmt = $conn->prepare("
 INSERT INTO login_verifications (user_id, code, expires_at)
 VALUES (?,?,?)
@@ -79,72 +71,43 @@ VALUES (?,?,?)
 $stmt->bind_param("iss", $user_id, $code, $expires_at);
 $stmt->execute();
 
-/* Send email */
+/* =========================
+   GMAIL API EMAIL SEND
+========================= */
+
 $to = $user['email'];
 $subject = "Your Login Verification Code";
 
 $message = "
-Hello {$user['full_name']},
+<h2>Artisan Grills Login Verification</h2>
 
-Your 4-digit login verification code is: $code
+<p>Hello {$user['full_name']},</p>
 
-This code expires in 5 minutes.
+<p>Your 4-digit login verification code is:</p>
 
-If this wasn't you, ignore this email.
+<h1 style='letter-spacing:5px'>{$code}</h1>
+
+<p>This code expires in 5 minutes.</p>
 ";
 
-$mail = new PHPMailer(true);
+$result = sendEmail($to, $subject, $message);
 
-try {
-
-    $mail->isSMTP();
-    $mail->Timeout = 10; // stop waiting after 10 seconds
-    $mail->SMTPDebug = 0;
-
-    $mail->Host = $mailConfig['host'];
-    $mail->SMTPAuth = true;
-    $mail->Username = $mailConfig['username'];
-    $mail->Password = $mailConfig['password'];
-
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = $mailConfig['port'];
-
-  // ======REMOVE THIS FOR PRODUCTION DEPLOYMENT=====
-    $mail->SMTPOptions = [
-        'ssl'=>[
-            'verify_peer'=>false,
-            'verify_peer_name'=>false,
-            'allow_self_signed'=>true
-        ]
-    ];
-  //==================================================
-
-    $mail->setFrom(
-        $mailConfig['from_email'],
-        $mailConfig['from_name']
-    );
-
-    $mail->addAddress($to, $user['full_name']);
-
-    $mail->isHTML(true);
-    $mail->Subject = $subject;
-
-    $mail->Body = "
-    <h2>Artisan Grills Login Verification</h2>
-
-    <p>Hello {$user['full_name']},</p>
-
-    <p>Your 4-digit login verification code is:</p>
-
-    <h1 style='letter-spacing:5px'>{$code}</h1>
-
-    <p>This code expires in 5 minutes.</p>
-    ";
-
-    //$mail->send();
-if(!$mail->send()){
+if (!$result) {
     echo json_encode([
-        "success"=>false,
+        "success" => false,
+        "message" => "Verification email failed. Please try again."
+    ]);
+    exit;
+}
+
+/* Return response */
+echo json_encode([
+    "success"=>true,
+    "requires_verification"=>true,
+    "user_id"=>$user_id
+]);
+exit;
+?>        "success"=>false,
         "message"=>"Verification email failed. Please try again."
     ]);
     exit;
