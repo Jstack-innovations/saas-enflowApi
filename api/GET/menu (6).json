@@ -1,0 +1,419 @@
+{
+    "appetizers": [
+        {
+            "id": 1,
+            "name": "Authentic Nigerian Beef Suya",
+            "description": "Charcoal-grilled beef marinated in traditional Nigerian suya spices, slow-roasted to smoky perfection and served with a bold, spicy finish.",
+            "price": 1,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/suya.jpg",
+            "tags": [
+                "Signature",
+                "    Spicy"
+            ],
+            "badge": "signature",
+            "available": true
+        },
+        {
+            "id": 2,
+            "name": "Smoked Turkey Wings (Signature)",
+            "description": "Tender smoked turkey wings, glazed with our house BBQ sauce, served with a zesty herb dip and crispy onion crunch.",
+            "price": 24,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/wings.jpg",
+            "tags": [
+                "Gluten-Free",
+                "Chef's Pick",
+                "Smoky"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 3,
+            "name": "Moi Moi Deluxe (Nigerian Style)",
+            "description": "Steamed Nigerian bean pudding made with fresh ground beans, peppers, and spices, served warm with a rich palm oil drizzle and a soft, silky texture.",
+            "price": 32,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/moimoi.jpg",
+            "tags": [
+                "Sharing",
+                "Premium"
+            ],
+            "badge": "signature",
+            "available": true
+        }
+    ],
+    "main": [
+        {
+            "id": 4,
+            "name": "Assorted (Nigerian) Jollof Rice Supreme",
+            "description": "Aromatic long-grain rice cooked in a rich tomato-pepper blend, served with tender chicken, caramelized onions, and a hint of smoky spice.",
+            "price": 42,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/jollof.jpg",
+            "tags": [
+                "Premium",
+                "Best Seller"
+            ],
+            "badge": "signature",
+            "available": true
+        },
+        {
+            "id": 5,
+            "name": "Nigerian Pepper Soup (Chicken \/ Goat)",
+            "description": "Hot and spicy broth infused with traditional Nigerian spices, served with tender meat and a refreshing kick of scent leaf. ",
+            "price": 26,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/peppersoup.jpg",
+            "tags": [
+                "Vegetarian",
+                "Seasonal"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 6,
+            "name": "Pounded Yam & Egusi",
+            "description": "Smooth, stretchy pounded yam paired with a hearty egusi soup made from ground melon seeds, spinach, and tender beef, simmered in flavorful spices.",
+            "price": 38,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/egusi.jpg",
+            "tags": [
+                "Slow-Cooked",
+                "Premium",
+                "Traditional",
+                "Hearty",
+                "Rich"
+            ],
+            "badge": "signature",
+            "available": true
+        }
+    ],
+    "regional": [
+        {
+            "id": 7,
+            "name": "Jamaican Ackee & Saltfish",
+            "description": "Jamaica\u2019s national dish\u2014salted fish saut\u00e9ed with ackee, peppers, and spices for a flavorful breakfast or main.",
+            "price": 28,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/jamaica.jpg",
+            "tags": [
+                "Spicy",
+                "Traditional"
+            ],
+            "badge": "regional",
+            "available": true
+        },
+        {
+            "id": 8,
+            "name": "Kenyan Ugali & Sukuma Wiki",
+            "description": "Soft ugali served with saut\u00e9ed kale, simmered in a rich tomato sauce and local spices for a comforting taste.",
+            "price": 36,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/kenya.jpg",
+            "tags": [
+                "Traditional",
+                "Kenyan",
+                "Healthy"
+            ],
+            "badge": "regional",
+            "available": true
+        },
+        {
+            "id": 9,
+            "name": "Nigerian Bole & Fish",
+            "description": "Roasted plantain paired with grilled fish and spicy pepper sauce, finished with crunchy groundnuts and smoky aroma.",
+            "price": 32,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/nigeria.jpg",
+            "tags": [
+                "Street Food",
+                "Southern",
+                "Signature"
+            ],
+            "badge": "regional",
+            "available": true
+        }
+    ],
+    "continental": [
+        {
+            "id": 10,
+            "name": "Spanish Patatas Bravas",
+            "description": "Crispy golden potatoes served with spicy tomato sauce and creamy garlic aioli \u2014 the perfect shareable side.",
+            "price": 48,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/spain.jpg",
+            "tags": [
+                "Tapas",
+                "Spicy",
+                "Snack"
+            ],
+            "badge": "continental",
+            "available": true
+        },
+        {
+            "id": 11,
+            "name": "Italian Truffle Mushroom Risotto",
+            "description": "Creamy Arborio rice cooked with wild mushrooms, parmesan, and black truffle \u2014 luxurious and indulgent.",
+            "price": 36,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/italy.jpg",
+            "tags": [
+                "Italian",
+                "Classic"
+            ],
+            "badge": "continental",
+            "available": true
+        },
+        {
+            "id": 12,
+            "name": "Chinese Vegetable Chow Mein",
+            "description": "Stir-fried noodles with crunchy veggies in a light savory sauce \u2014 simple, delicious, and satisfying.",
+            "price": 34,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/china.jpg",
+            "tags": [
+                "Traditional",
+                "Vegetarian",
+                "Noodles"
+            ],
+            "badge": "continental",
+            "available": true
+        }
+    ],
+    "desserts": [
+        {
+            "id": 13,
+            "name": "Chocolate Souffl\u00e9",
+            "description": "Warm chocolate souffl\u00e9 with vanilla bean ice cream and berry coulis",
+            "price": 16,
+            "image": "https:\/\/images.unsplash.com\/photo-1563729784474-d77dbb933a9e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+            "tags": [
+                "Signature",
+                "Made to Order"
+            ],
+            "badge": "signature",
+            "available": true
+        },
+        {
+            "id": 14,
+            "name": "Cr\u00e8me Br\u00fbl\u00e9e Trio",
+            "description": "Vanilla, lavender, and chocolate cr\u00e8me br\u00fbl\u00e9e with shortbread cookies",
+            "price": 18,
+            "image": "https:\/\/images.unsplash.com\/photo-1499636136210-6f4ee915583e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+            "tags": [
+                "Vegetarian",
+                "Classic"
+            ],
+            "available": true
+        },
+        {
+            "id": 15,
+            "name": "New York Cheesecake",
+            "description": "Smooth and creamy cheesecake with a buttery biscuit base, finished with a light vanilla aroma.",
+            "price": 22,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/yorkcake.jpg",
+            "tags": [
+                "Classic",
+                "Creamy",
+                "Dessert"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "breakfast": [
+        {
+            "id": 16,
+            "name": "Yam & Egg Sauce",
+            "description": "Boiled yam served with rich tomato and pepper egg sauce, cooked in palm or vegetable oil.",
+            "price": 14,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/yamandegg.jpg",
+            "tags": [
+                "Breakfast",
+                "Classic"
+            ],
+            "badge": "breakfast",
+            "available": true
+        },
+        {
+            "id": 17,
+            "name": "Fried Plantain & Scrambled Eggs",
+            "description": "Sweet fried plantain paired with fluffy scrambled eggs, seasoned to perfection.",
+            "price": 10,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/plantainandegg.jpg",
+            "tags": [
+                "Vegan",
+                "Healthy",
+                "Savory",
+                "Breakfast"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 18,
+            "name": "Artisan Grilled Chicken Sandwich",
+            "description": "Tender marinated chicken grilled to perfection, paired with fresh greens, ripe tomatoes, and a rich signature sauce on a warm brioche bun.",
+            "price": 12,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/sandwich.jpg",
+            "tags": [
+                "Sweet",
+                "Kids",
+                "Grilled",
+                "Sandwich"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "drinks": [
+        {
+            "id": 19,
+            "name": "Bellare Wine",
+            "description": "A smooth and elegant wine with delicate fruity notes and a clean, refreshing finish. Perfectly balanced for relaxed dining and special moments alike.",
+            "price": 4,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/bellaire.jpg",
+            "tags": [
+                "Signature",
+                "Smooth",
+                "Premium",
+                "Wine"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 20,
+            "name": "Mo\u00ebt & Chandon Champagne",
+            "description": "An iconic French champagne celebrated for its vibrant elegance and refined bubbles. Crisp notes of green apple, citrus, and white peach blend seamlessly with a subtle brioche finish, making it perfect for celebrations and unforgettable moments.",
+            "price": 6,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/chandon.jpg",
+            "tags": [
+                "Luxury",
+                "Signature",
+                "Sparkling"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 21,
+            "name": "Courvoisier",
+            "description": "A distinguished French cognac known for its rich aroma and exceptionally smooth character. Notes of vanilla, toasted oak, and ripe fruit blend beautifully, delivering a refined finish that\u2019s perfect for slow sipping or celebratory moments.",
+            "price": 3,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/courvoisier.jpg",
+            "tags": [
+                "Premium",
+                "Smooth",
+                "Luxury"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "fastfood": [
+        {
+            "id": 22,
+            "name": "Artisan Grilled Chicken Sandwich",
+            "description": "Tender marinated chicken grilled to perfection, paired with fresh greens, ripe tomatoes, and a rich signature sauce on a warm brioche bun",
+            "price": 12,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/sandwich.jpg",
+            "tags": [
+                "Fast Food",
+                "Popular"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 23,
+            "name": "Chicken Wings (Nigerian Style",
+            "description": "Crispy, juicy chicken wings tossed in a spicy pepper glaze with a side of cooling dip.",
+            "price": 11,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/chickenwings.jpg",
+            "tags": [
+                "Spicy",
+                "Fastfood"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "combos": [
+        {
+            "id": 24,
+            "name": "Weekend Special",
+            "description": "2 main dishes + 4 sides + 2 drinks.. A perfect feast for the weekend \u2014 a curated selection of our top dishes, served as a satisfying set meal. Enjoy premium flavors, generous portions, and a delicious experience designed for sharing with family and friends.",
+            "price": 55,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/weekend.jpg",
+            "tags": [
+                "Combo",
+                "Family"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 25,
+            "name": "Couple Combo",
+            "description": "2 appetizers + 2 mains + 2 drinks.. A romantic meal for two \u2014 includes 2 appetizers, 2 main dishes, and 2 drinks. Perfect for date nights, anniversaries, or just a cozy dinner at Artisan Grills.",
+            "price": 42,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/couple.jpg",
+            "tags": [
+                "Combo",
+                "Couple"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "vegan": [
+        {
+            "id": 26,
+            "name": "(Nigerian) Jollof Rice Supreme",
+            "description": "Aromatic long-grain rice cooked in a rich tomato-pepper blend, served with tender chicken, caramelized onions, and a hint of smoky spice.",
+            "price": 16,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/jollof.jpg",
+            "tags": [
+                "Vegan",
+                "Healthy"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 27,
+            "name": "Plantain & Beans (Ewa Agoyin Style)",
+            "description": "Soft cooked beans served with fried plantain and spicy pepper sauce.",
+            "price": 14,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/beans.jpg",
+            "tags": [
+                "Vegan",
+                "Comfort",
+                "Street Food"
+            ],
+            "badge": "",
+            "available": true
+        }
+    ],
+    "kids": [
+        {
+            "id": 28,
+            "name": "Kids Chicken Pie",
+            "description": "Flaky buttery crust filled with tender chicken, creamy veggies, and aromatic spices \u2014 a comfort classic with a gourmet twist.",
+            "price": 9,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/chickenpie.jpg",
+            "tags": [
+                "Kids",
+                "Snack"
+            ],
+            "badge": "",
+            "available": true
+        },
+        {
+            "id": 29,
+            "name": "Rice & Stew",
+            "description": "Perfectly steamed rice served with rich, flavorful tomato stew and tender, slow-cooked meat \u2014 a hearty classic done right.",
+            "price": 8,
+            "image": "https:\/\/jstack-sigma.vercel.app\/artisangrill\/riceandstew.jpg",
+            "tags": [
+                "Comfort",
+                "Nigerian",
+                "Signature"
+            ],
+            "badge": "Signature",
+            "available": true
+        }
+    ]
+}
