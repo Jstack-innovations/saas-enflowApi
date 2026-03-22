@@ -8,6 +8,8 @@
    // exit();
 //}
 
+header("Content-Type: text/html; charset=UTF-8", true);
+
 
 
 $file = __DIR__ . '/../../SECURE/db.php';
