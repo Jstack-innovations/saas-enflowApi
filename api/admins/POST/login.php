@@ -1,4 +1,12 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => true,
+    'httponly' => true,
+    'samesite' => 'None'
+]);
+session_start();
 
 $allowedOrigins = [
     "http://localhost:5173",
@@ -11,6 +19,12 @@ if (in_array($origin, $allowedOrigins)) {
 }
 header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 
 
 $file = __DIR__ . '/../../SECURE/db.php';
