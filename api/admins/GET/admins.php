@@ -3,7 +3,15 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 header("Content-Type: application/json");
 
-include "../../SECURE/db.php";
+
+$file = __DIR__ . '/../../SECURE/db.php';
+
+if (!file_exists($file)) {
+    die(json_encode(["error" => "db.php not found"]));
+}
+
+require_once $file;
+
 
 $admins = $conn->query("SELECT * FROM admins ORDER BY id DESC");
 $result = [];
