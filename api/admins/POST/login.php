@@ -1,5 +1,17 @@
 <?php
-require_once __DIR__ . "/../../SECURE/authGuard.php";
+
+$allowedOrigins = [
+    "http://localhost:5173",
+    "https://admin-artisangrilluxe.vercel.app",
+    "https://artisangrills-production.up.railway.app"
+];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
 
 $file = __DIR__ . '/../../SECURE/db.php';
 
