@@ -1,15 +1,9 @@
 <?php
-require_once __DIR__ . "/../../SECURE/authGuard.php";
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET");
+header("Content-Type: application/json");
 
-
-$file = __DIR__ . '/../../SECURE/db.php';
-
-if (!file_exists($file)) {
-    die(json_encode(["error" => "db.php not found"]));
-}
-
-require_once $file;
-
+include "../../SECURE/db.php";
 
 $admins = $conn->query("SELECT * FROM admins ORDER BY id DESC");
 $result = [];
