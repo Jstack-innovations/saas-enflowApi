@@ -1,14 +1,5 @@
 <?php
-session_start();
-
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: PUT, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit;
-}
+require_once __DIR__ . "/../../SECURE/authGuard.php";
 
 $taxFile = __DIR__ . "/../../GET/JSON/tax.json";
 
