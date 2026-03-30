@@ -179,6 +179,12 @@ if ($uri === "/UandV") {
     exit;
 }
 
+if ($uri === "/getRevenue") {
+    require $basePath . "/admins/GET/revenue.php";
+    exit;
+}
+
+
 
 /* POST ROUTES */
 
