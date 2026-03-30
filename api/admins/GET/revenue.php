@@ -1,4 +1,17 @@
 <?php
+
+// ===== CORS HEADERS =====
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+// Handle preflight request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 require_once __DIR__ . "/../../SECURE/db.php";
 
 // Initialize last 7 days with zero revenue
@@ -26,16 +39,15 @@ if ($res) {
     }
 }
 
-// Format for frontend: Mon, Tue, etc
+// Format for frontend
 $output = ["dailyRevenue" => []];
+
 foreach ($dailyRevenue as $date => $total) {
-    $dayName = date('D', strtotime($date)); // Mon, Tue, etc
+    $dayName = date('D', strtotime($date));
     $output["dailyRevenue"][] = [
         "day" => $dayName,
         "revenue" => $total
     ];
 }
 
-// Return JSON
-header('Content-Type: application/json');
-echo json_encode($output, JSON_PRETTY_PRINT);
+echo json_encode($output);
