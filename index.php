@@ -184,6 +184,11 @@ if ($uri === "/getRevenue") {
     exit;
 }
 
+if ($uri === "/getHourlyRevenue") {
+    require $basePath . "/admins/GET/revenue.php";
+    exit;
+}
+
 
 
 /* POST ROUTES */
