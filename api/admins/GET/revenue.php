@@ -1,12 +1,10 @@
 <?php
-
 // ===== CORS HEADERS =====
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 
-// Handle preflight request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
@@ -14,40 +12,125 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . "/../../SECURE/db.php";
 
-// Initialize last 7 days with zero revenue
+/* ===== LOAD MENU JSON ===== */
+$menuFile = __DIR__ . "/../../GET/JSON/menu.json";
+$menuJson = [];
+if (file_exists($menuFile)) {
+    $menuJson = json_decode(file_get_contents($menuFile), true) ?? [];
+}
+$menuImages = [];
+foreach ($menuJson as $category) {
+    foreach ($category as $m) {
+        $menuImages[$m['id']] = $m['image'];
+    }
+}
+
+/* ===== FETCH ORDERS + ITEMS ===== */
+$sqlOrders = "
+SELECT 
+    o.id AS order_id,
+    o.user_id,
+    o.name,
+    o.phone,
+    o.table_no,
+    o.order_type,
+    o.total_amount,
+    o.payment_ref,
+    o.created_at,
+    o.status,
+    o.full_address,
+    o.pickup_time,
+    o.plate_order_no,
+    o.order_status,
+    i.id AS order_item_id,
+    i.paid_order_id,
+    i.menu_id,
+    i.menu_name,
+    i.price,
+    i.quantity
+FROM paid_orders o
+LEFT JOIN paid_order_items i ON o.id = i.paid_order_id
+ORDER BY o.created_at DESC
+";
+$res = $conn->query($sqlOrders);
+
+$orders = [];
+$totalPlaced = $totalServed = $totalDelivered = $totalPickup = $totalRevenue = 0;
+
+while ($row = $res->fetch_assoc()) {
+    $id = $row['order_id'];
+    if (!isset($orders[$id])) {
+        $orders[$id] = ["info" => $row, "items" => []];
+        $totalPlaced++;
+        if ($row['order_status'] === "Served") $totalServed++;
+        if ($row['order_status'] === "Delivered") $totalDelivered++;
+        if ($row['order_type'] === "pickup") $totalPickup++;
+        $totalRevenue += floatval($row['total_amount']);
+    }
+    if ($row['menu_name']) {
+        $orders[$id]['items'][] = [
+            "name" => $row['menu_name'],
+            "price" => $row['price'],
+            "qty" => $row['quantity'],
+            "image" => $menuImages[$row['menu_id']] ?? "images/default.jpg",
+            "menu_id" => $row['menu_id'],
+            "paid_order_id" => $row['paid_order_id'],
+            "order_item_id" => $row['order_item_id']
+        ];
+    }
+}
+
+/* ===== DAILY REVENUE - LAST 7 DAYS ===== */
 $dailyRevenue = [];
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $dailyRevenue[$date] = 0;
 }
-
-// Fetch revenue from DB for the last 7 days
-$sql = "
-SELECT 
-    DATE(created_at) as order_date,
-    SUM(total_amount) as total
+$sqlDaily = "
+SELECT DATE(created_at) as order_date, SUM(total_amount) as total
 FROM paid_orders
 WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
 GROUP BY DATE(created_at)
 ";
-
-$res = $conn->query($sql);
-
-if ($res) {
-    while ($row = $res->fetch_assoc()) {
-        $dailyRevenue[$row['order_date']] = floatval($row['total']);
-    }
+$resDaily = $conn->query($sqlDaily);
+while ($row = $resDaily->fetch_assoc()) {
+    $dailyRevenue[$row['order_date']] = floatval($row['total']);
 }
-
-// Format for frontend
-$output = ["dailyRevenue" => []];
-
+$dailyRevenueOutput = [];
 foreach ($dailyRevenue as $date => $total) {
     $dayName = date('D', strtotime($date));
-    $output["dailyRevenue"][] = [
-        "day" => $dayName,
-        "revenue" => $total
-    ];
+    $dailyRevenueOutput[] = ["day" => $dayName, "revenue" => $total];
 }
 
-echo json_encode($output);
+/* ===== HOURLY REVENUE - TODAY ===== */
+$hourlyRevenue = array_fill(0, 24, 0);
+$sqlHourly = "
+SELECT HOUR(created_at) as order_hour, SUM(total_amount) as total
+FROM paid_orders
+WHERE DATE(created_at) = CURDATE()
+GROUP BY HOUR(created_at)
+";
+$resHourly = $conn->query($sqlHourly);
+while ($row = $resHourly->fetch_assoc()) {
+    $hour = intval($row['order_hour']);
+    $hourlyRevenue[$hour] = floatval($row['total']);
+}
+$hourlyRevenueOutput = [];
+foreach ($hourlyRevenue as $hour => $total) {
+    $hourFormatted = date("gA", strtotime("$hour:00"));
+    $hourlyRevenueOutput[] = ["hour" => $hourFormatted, "revenue" => $total];
+}
+
+/* ===== FINAL OUTPUT ===== */
+echo json_encode([
+    "orders" => $orders,
+    "stats" => [
+        "totalPlaced" => $totalPlaced,
+        "totalServed" => $totalServed,
+        "totalDelivered" => $totalDelivered,
+        "totalPickup" => $totalPickup,
+        "totalRevenue" => $totalRevenue
+    ],
+    "dailyRevenue" => $dailyRevenueOutput,
+    "hourlyRevenue" => $hourlyRevenueOutput
+]);
