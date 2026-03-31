@@ -42,8 +42,12 @@ if ($res) {
 $output = ["hourlyRevenue" => []];
 
 foreach ($hourlyRevenue as $hour => $total) {
+
+    // Convert 24hr to 12hr format
+    $formattedHour = date("gA", strtotime($hour . ":00"));
+
     $output["hourlyRevenue"][] = [
-        "hour" => $hour,
+        "hour" => $formattedHour,
         "revenue" => $total
     ];
 }
