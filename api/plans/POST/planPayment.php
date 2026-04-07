@@ -127,7 +127,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 $status = "active";
 
 $stmt->bind_param(
-    "ssssssssssdsss",
+    "ssssssssssdsss",  // 14 parameters: 13 strings/doubles + status
     $fullname,
     $username,
     $email,
@@ -140,6 +140,7 @@ $stmt->bind_param(
     $plan,
     $amount,
     $tx_id,
+    $subscriptionCode, // <- bind the generated subscription code here
     $status
 );
 
