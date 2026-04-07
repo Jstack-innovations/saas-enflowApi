@@ -32,6 +32,27 @@ $total       = $data['amount'] ?? 0;
 $ref         = $data['transaction_id'] ?? '';
 $cart        = $data['cart'] ?? [];
 
+
+
+
+
+ob_start();
+include __DIR__ . '/../SECURE/flutterwave-key.php';
+$keyOutput = ob_get_clean();
+$keyData = json_decode($keyOutput, true);
+$secretKey = $keyData['secretKey'] ?? '';
+
+if (!$secretKey) {
+    echo json_encode([
+        "status"=>"error",
+        "message"=>"Secret key not found"
+    ]);
+    exit;
+}
+
+
+
+
 /* ===== SESSION TOKEN (IF USER IS LOGGED IN) ===== */
 $sessionToken = $data['session_token'] ?? null;
 $user_id = null;
