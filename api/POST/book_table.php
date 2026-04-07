@@ -39,6 +39,65 @@ if (!$tableId || !$name || !$email || !$phone || !$bookingDate || !$amount || !$
     exit;
 }
 
+
+
+
+
+
+// Fetch Flutterwave secret key
+ob_start();
+include __DIR__ . '/../SECURE/flutterwave-key.php';
+$keyOutput = ob_get_clean();
+$keyData = json_decode($keyOutput, true);
+$secretKey = $keyData['secretKey'] ?? '';
+
+if (!$secretKey) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Secret key not found"
+    ]);
+    exit;
+}
+
+// Verify transaction with Flutterwave
+$curl = curl_init();
+curl_setopt_array($curl, [
+    CURLOPT_URL => "https://api.flutterwave.com/v3/transactions/$transaction_id/verify",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CUSTOMREQUEST => "GET",
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer $secretKey",
+        "Content-Type: application/json"
+    ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+$result = json_decode($response, true);
+
+if ($result['status'] !== 'success' || $result['data']['status'] !== 'successful') {
+    echo json_encode([
+        "success" => false,
+        "message" => "Payment not verified"
+    ]);
+    exit;
+}
+
+// Optional: verify amount
+if ((float)$result['data']['amount'] !== (float)$amount) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Amount mismatch"
+    ]);
+    exit;
+}
+
+
+
+
+
+
 // ✅ FIX ADDED HERE — Convert booking date to proper MySQL DATETIME format
 $bookingDate = date("Y-m-d H:i:s", strtotime($bookingDate));
 
