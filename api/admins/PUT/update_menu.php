@@ -45,15 +45,16 @@ if ($action === "add") {
     $newId = $maxId + 1;
 
     $menuJson[$category][] = [
-        "id" => $newId,
-        "name" => $data['name'] ?? "",
-        "description" => $data['description'] ?? "",
-        "price" => floatval($data['price'] ?? 0),
-        "image" => $data['image'] ?? "",
-        "tags" => $data['tags'] ?? "",
-        "badge" => $data['badge'] ?? "",
-        "available" => $data['available'] ?? true
-    ];
+    "id" => $newId,
+    "name" => $data['name'] ?? "",
+    "description" => $data['description'] ?? "",
+    "price" => floatval($data['price'] ?? 0),
+    "image" => $data['image'] ?? "",
+    "tags" => $data['tags'] ?? [],
+    "badge" => $data['badge'] ?? "",
+    "available" => filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN),
+    "stock" => intval($data['stock'] ?? 0)
+];
 }
 
 if ($action === "update") {
@@ -70,9 +71,10 @@ if ($action === "update") {
                 "description" => $data['description'] ?? "",
                 "price" => floatval($data['price'] ?? 0),
                 "image" => $data['image'] ?? "",
-                "tags" => $data['tags'] ?? "",
+                "tags" => $data['tags'] ?? [],
                 "badge" => $data['badge'] ?? "",
-                "available" => $data['available'] ?? true
+                "available" => filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                "stock" => intval($data['stock'] ?? 0)
             ];
 
             break;
