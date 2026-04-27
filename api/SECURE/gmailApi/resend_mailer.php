@@ -2,11 +2,10 @@
 
 function sendEmail($to, $subject, $body) {
 
-   // $apiKey = getenv("RESEND_API_KEY");
-    $apiKey = "re_VKZwjXXd_A5Bvidoiwn3NpTbMqeQRjzTA"; // paste your key here temporarily
+    $apiKey = "re_VKZwjXXd_A5Bvidoiwn3NpTbMqeQRjzTA";
 
-    $data = [
-        "from" => "Grillux <onboarding@resend.dev>", 
+    $payload = [
+        "from" => "Grillux <onboarding@resend.dev>",
         "to" => is_array($to) ? $to : [$to],
         "subject" => $subject,
         "html" => $body
@@ -14,25 +13,57 @@ function sendEmail($to, $subject, $body) {
 
     $ch = curl_init("https://api.resend.com/emails");
 
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer " . $apiKey,
-        "Content-Type: application/json"
+    curl_setopt_array($ch, [
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer " . $apiKey,
+            "Content-Type: application/json"
+        ],
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10
     ]);
 
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+    $curlError = null;
     if (curl_errno($ch)) {
-        $error = curl_error($ch);
-        curl_close($ch);
-        return ["status" => "error", "message" => $error];
+        $curlError = curl_error($ch);
     }
 
     curl_close($ch);
 
-    return json_decode($response, true);
-}
+    $decoded = json_decode($response, true);
 
+    // 🔥 HARD FAILURE CHECK (IMPORTANT)
+    if ($curlError) {
+        return [
+            "status" => "error",
+            "type" => "curl_error",
+            "message" => $curlError
+        ];
+    }
+
+    if ($httpCode !== 200 && $httpCode !== 202) {
+        return [
+            "status" => "error",
+            "type" => "http_error",
+            "http_code" => $httpCode,
+            "response" => $decoded ?? $response
+        ];
+    }
+
+    if (!isset($decoded["id"])) {
+        return [
+            "status" => "error",
+            "type" => "resend_error",
+            "response" => $decoded ?? $response
+        ];
+    }
+
+    return [
+        "status" => "success",
+        "id" => $decoded["id"]
+    ];
+}
