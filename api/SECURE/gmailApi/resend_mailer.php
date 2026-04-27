@@ -2,7 +2,8 @@
 
 function sendEmail($to, $subject, $body) {
 
-    $apiKey = getenv("RESEND_API_KEY");
+   // $apiKey = getenv("RESEND_API_KEY");
+    $apiKey = "re_VKZwjXXd_A5Bvidoiwn3NpTbMqeQRjzTA"; // paste your key here temporarily
 
     $data = [
         "from" => "Grillux <onboarding@resend.dev>", 
