@@ -79,6 +79,16 @@ if ($uri === "/bookTable") {
     exit;
 }
 
+if ($uri === "/createOrder") {
+    require $basePath . "/POST/create-order.php";
+    exit;
+}
+
+if ($uri === "/confirmOrder") {
+    require $basePath . "/POST/confirm-order.php";
+    exit;
+}
+
 if ($uri === "/saveOrder") {
     require $basePath . "/POST/save_paid_order.php";
     exit;
