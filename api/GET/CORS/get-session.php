@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 
-$file = __DIR__ . '/../SECURE/db.php';
+$file = __DIR__ . '/../../SECURE/db.php';
 
 if (!file_exists($file)) {
     die(json_encode(["error" => "db.php not found"]));
