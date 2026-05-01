@@ -72,6 +72,12 @@ if ($uri === "/tracking") {
     exit;
 }
 
+if ($uri === "/getSession") {
+    require $basePath . "/GET/get-session.php";
+    exit;
+}
+
+
 /* POST ROUTES */
 
 if ($uri === "/bookTable") {
@@ -91,11 +97,6 @@ if ($uri === "/confirmOrder") {
 
 if ($uri === "/createSession") {
     require $basePath . "/POST/create-session.php";
-    exit;
-}
-
-if ($uri === "/getSession") {
-    require $basePath . "/POST/get-session.php";
     exit;
 }
 
