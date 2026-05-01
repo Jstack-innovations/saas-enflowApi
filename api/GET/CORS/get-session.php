@@ -48,6 +48,16 @@ if ($result->num_rows === 0) {
 }
 
 $order = $result->fetch_assoc();
+
+/* 🔥 BLOCK CLOSED OR PAID SESSIONS */
+if ($order['status'] !== 'open') {
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Session closed"
+    ]);
+    exit;
+}
+
 $order_id = $order['id'];
 
 
