@@ -162,7 +162,7 @@ foreach ($emailsToSend as $item) {
     $body = "
         <h2>🔥 New Item Ordered</h2>
         <p><b>Session:</b> $session_code</p>
-        <p><b>Table Order ID:</b> $order_id</p>
+        <p><b>Order ID:</b> $order_id</p>
         <p><b>Item:</b> {$item['name']}</p>
         <p><b>Qty:</b> {$item['qty']}</p>
         <p><b>Price:</b> {$item['price']}</p>
