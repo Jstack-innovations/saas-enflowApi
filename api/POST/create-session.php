@@ -182,6 +182,41 @@ try {
 
     $conn->commit();
 
+    /* ===== SEND EMAIL FOR NEW TABLE ORDER ===== */
+
+require_once __DIR__ . '/../SECURE/gmailApi/resend_mailer.php';
+
+$itemsHtml = "";
+foreach ($cart as $item) {
+    $itemsHtml .= "
+        <p>
+            <b>{$item['name']}</b> 
+            | Qty: {$item['quantity']} 
+            | Price: {$item['price']}
+        </p>
+    ";
+}
+
+$body = "
+    <h2>🔥 New Table Order Created</h2>
+    <p><b>Session Code:</b> $session_code</p>
+    <p><b>Order ID:</b> $order_id</p>
+    <p><b>Name:</b> $name</p>
+    <p><b>Phone:</b> $phone</p>
+    <p><b>Table No:</b> $tableNo</p>
+    <hr>
+    <h3>Items:</h3>
+    $itemsHtml
+    <hr>
+    <p><b>Total Amount:</b> $amount</p>
+";
+
+sendEmail(
+    "yourrestaurant@email.com",
+    "🔥 New Table Order - Table $tableNo",
+    $body
+);
+
     echo json_encode([
         "status"       => "success",
         "order_id"     => $order_id,
