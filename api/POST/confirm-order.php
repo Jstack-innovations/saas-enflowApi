@@ -64,7 +64,7 @@ if (!$secretKey) {
 $curl = curl_init();
 
 curl_setopt_array($curl, array(
-  CURLOPT_URL => "https://api.flutterwave.com/v3/transactions/$ref/verify",
+  CURLOPT_URL => "https://api.flutterwave.com/v3/transactions/$transaction_id/verify",
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_CUSTOMREQUEST => "GET",
   CURLOPT_HTTPHEADER => array(
