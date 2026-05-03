@@ -106,26 +106,28 @@ try {
     /* Kitchen does NOT see this — only 'paid' orders are shown to kitchen */
 
     $stmt = $conn->prepare("
-    INSERT INTO paid_orders
-    (user_id, name, phone, table_no, full_address, order_type,
-     total_amount, plate_order_no, status, pickup_time)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-");
+        INSERT INTO paid_orders
+        (user_id, name, phone, table_no, full_address, order_type,
+         total_amount, plate_order_no, status, pickup_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
     $status = "payment_pending";
 
     $stmt->bind_param(
-    "isssssdssss",
-    $user_id,
-    $name,
-    $phone,
-    $tableNo,
-    $address,
-    $orderType,
-    $total,
-    $plate_no,
-    $status,
-    $pickup_time
-);
+        "isssssdsss",
+        $user_id,
+        $name,
+        $phone,
+        $tableNo,
+        $address,
+        $orderType,
+        $total,
+        $plate_no,
+        $status,
+        $pickup_time
+    );
+
     $stmt->execute();
     $paid_order_id = $stmt->insert_id;
 
