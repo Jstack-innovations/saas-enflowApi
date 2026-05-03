@@ -36,7 +36,7 @@ $cart        = $data['cart'] ?? [];
 
 /* ===== VALIDATION ===== */
 
-if (!$order_id || !$ref || empty($cart)) {
+if (!$order_id || (!$transaction_id && !$tx_ref) || empty($cart))
     echo json_encode(["status" => "error", "message" => "Missing data"]);
     exit;
 }
@@ -108,7 +108,8 @@ try {
         WHERE id = ? AND status = 'payment_pending'
     ");
 
-    $updateStmt->bind_param("si", $ref, $order_id);
+    $payment_ref = $transaction_id ?: $tx_ref;
+    $updateStmt->bind_param("si", $payment_ref, $order_id);
     $updateStmt->execute();
 
     if ($updateStmt->affected_rows === 0) {
