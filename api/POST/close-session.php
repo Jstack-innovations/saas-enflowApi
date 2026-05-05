@@ -24,7 +24,7 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 $session_code   = $data['session_code']   ?? '';
 $ref            = $data['transaction_id'] ?? '';
-$total          = $data['amount']         ?? 0;
+$total          = $data['amount']         ?? 0; // kept but no longer trusted
 
 
 
@@ -68,11 +68,18 @@ curl_setopt_array($curl, array(
 ));
 
 $response = curl_exec($curl);
+
+if (curl_errno($curl)) {
+    echo json_encode(["status" => "error", "message" => "Payment gateway error"]);
+    exit;
+}
+
 curl_close($curl);
 
 $result = json_decode($response, true);
 
 if (
+    !$result ||
     $result['status'] !== 'success' ||
     $result['data']['status'] !== 'successful'
 ) {
@@ -80,8 +87,48 @@ if (
     exit;
 }
 
-/* Optional: check amount matches */
-if ((float)$result['data']['amount'] !== (float)$total) {
+
+/* ===== FETCH ORDER FROM DB (SOURCE OF TRUTH) ===== */
+
+$stmt = $conn->prepare("
+    SELECT id, total_amount, status, payment_ref
+    FROM paid_orders
+    WHERE session_code = ?
+    LIMIT 1
+");
+
+$stmt->bind_param("s", $session_code);
+$stmt->execute();
+$dbResult = $stmt->get_result();
+$order = $dbResult->fetch_assoc();
+$stmt->close();
+
+if (!$order) {
+    echo json_encode(["status" => "error", "message" => "Session not found"]);
+    exit;
+}
+
+/* ===== PREVENT DOUBLE PAYMENT ===== */
+
+if ($order['status'] === 'paid') {
+    echo json_encode(["status" => "error", "message" => "Already paid"]);
+    exit;
+}
+
+/* ===== VERIFY TX_REF MATCHES SESSION ===== */
+
+if (($result['data']['tx_ref'] ?? '') !== $session_code) {
+    echo json_encode(["status" => "error", "message" => "Invalid reference"]);
+    exit;
+}
+
+/* ===== AMOUNT CHECK (DB vs FLUTTERWAVE) ===== */
+
+$flutter_amount = (float)$result['data']['amount'];
+$db_amount      = (float)$order['total_amount'];
+
+/* allow tiny rounding differences */
+if (abs($flutter_amount - $db_amount) > 0.01) {
     echo json_encode(["status" => "error", "message" => "Amount mismatch"]);
     exit;
 }
@@ -137,4 +184,3 @@ try {
         "message" => $e->getMessage()
     ]);
 }
-
