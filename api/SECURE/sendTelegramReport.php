@@ -8,7 +8,7 @@ $botToken = getenv("TELEGRAM_BOT_TOKEN");
 $chatId   = getenv("TELEGRAM_CHAT_ID");
 
 // ===== DB Connection =====
-$file = __DIR__ . '/./db.php';
+$file = __DIR__ . '/db.php';
 if (!file_exists($file)) die(json_encode(["error" => "db.php not found"]));
 require_once $file;
 
