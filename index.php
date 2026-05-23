@@ -301,7 +301,7 @@ if ($uri === "/adminDeleteUser") {
 
 /* SUBSCRIPTION PLAN ROUTES */
 /*GET*/
-if ($uri === "/plans") {
+if ($uri === "/subscriptionContent") {
     require $basePath . "/plans/GET/CORS/jsonplans.php";
     exit;
 }
