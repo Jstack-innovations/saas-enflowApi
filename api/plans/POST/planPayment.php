@@ -25,17 +25,8 @@ $businessName = $data['businessName'] ?? '';
 $plan         = $data['plan'] ?? '';
 $tx_id        = $data['transaction_id'] ?? '';
 
-if (
-    !$fullname ||
-    !$email ||
-    !$phone ||
-    !$plan ||
-    !$tx_id
-) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Missing required fields"
-    ]);
+if (!$fullname || !$email || !$phone || !$plan || !$tx_id) {
+    echo json_encode(["status" => "error", "message" => "Missing required fields"]);
     exit;
 }
 
@@ -44,14 +35,11 @@ ob_start();
 include __DIR__ . '/../../SECURE/flutterwave-key.php';
 $keyOutput = ob_get_clean();
 
-$keyData = json_decode($keyOutput, true);
+$keyData   = json_decode($keyOutput, true);
 $secretKey = $keyData['secretKey'] ?? '';
 
 if (!$secretKey) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Secret key not found"
-    ]);
+    echo json_encode(["status" => "error", "message" => "Secret key not found"]);
     exit;
 }
 
@@ -59,10 +47,10 @@ if (!$secretKey) {
 $curl = curl_init();
 
 curl_setopt_array($curl, [
-    CURLOPT_URL => "https://api.flutterwave.com/v3/transactions/$tx_id/verify",
+    CURLOPT_URL            => "https://api.flutterwave.com/v3/transactions/$tx_id/verify",
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_CUSTOMREQUEST => "GET",
-    CURLOPT_HTTPHEADER => [
+    CURLOPT_CUSTOMREQUEST  => "GET",
+    CURLOPT_HTTPHEADER     => [
         "Authorization: Bearer $secretKey",
         "Content-Type: application/json"
     ],
@@ -71,10 +59,7 @@ curl_setopt_array($curl, [
 $response = curl_exec($curl);
 
 if (curl_errno($curl)) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Payment gateway error"
-    ]);
+    echo json_encode(["status" => "error", "message" => "Payment gateway error"]);
     exit;
 }
 
@@ -87,10 +72,7 @@ if (
     $result['status'] !== 'success' ||
     $result['data']['status'] !== 'successful'
 ) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Payment not verified"
-    ]);
+    echo json_encode(["status" => "error", "message" => "Payment not verified"]);
     exit;
 }
 
@@ -98,20 +80,13 @@ if (
 $amount = (float)$result['data']['amount'];
 
 /* ===== DUPLICATE CHECK ===== */
-$dup = $conn->prepare("
-    SELECT id FROM subscriptions
-    WHERE transaction_id = ?
-");
-
+$dup = $conn->prepare("SELECT id FROM subscriptions WHERE transaction_id = ?");
 $dup->bind_param("s", $tx_id);
 $dup->execute();
 $dup->store_result();
 
 if ($dup->num_rows > 0) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Already processed"
-    ]);
+    echo json_encode(["status" => "error", "message" => "Already processed"]);
     exit;
 }
 
@@ -123,6 +98,13 @@ if (stripos($plan, "annual") !== false) {
     $renewalDate = date("Y-m-d", strtotime("+1 year"));
 } else {
     $renewalDate = date("Y-m-d", strtotime("+1 month"));
+}
+
+/* ===== ZARA CREDITS ===== */
+if (stripos($plan, "annual") !== false) {
+    $zaraCredits = 1500;
+} else {
+    $zaraCredits = 100;
 }
 
 /* ===== INSERT ===== */
@@ -144,13 +126,14 @@ $stmt = $conn->prepare("
         transaction_id,
         subscription_code,
         status,
-        renewal_date
+        renewal_date,
+        zara_credits
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "ssssssssssdssss",
+    "ssssssssssdssssi",
     $fullname,
     $username,
     $email,
@@ -165,19 +148,18 @@ $stmt->bind_param(
     $tx_id,
     $subscriptionCode,
     $status,
-    $renewalDate
+    $renewalDate,
+    $zaraCredits
 );
 
 if (!$stmt->execute()) {
-    echo json_encode([
-        "status" => "error",
-        "message" => $stmt->error
-    ]);
+    echo json_encode(["status" => "error", "message" => $stmt->error]);
     exit;
 }
 
 echo json_encode([
-    "status" => "success",
+    "status"            => "success",
     "subscription_code" => $subscriptionCode,
-    "renewal_date" => $renewalDate
+    "renewal_date"      => $renewalDate,
+    "zara_credits"      => $zaraCredits,
 ]);
