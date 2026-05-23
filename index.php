@@ -175,6 +175,11 @@ if ($uri === "/admin") {
     exit;
 }
 
+if ($uri === "/accountStatus") {
+    require $basePath . "/admins/GET/accountStatus.php";
+    exit;
+}
+
 if ($uri === "/fetchOrder") {
     require $basePath . "/admins/GET/fetch_order.php";
     exit;
