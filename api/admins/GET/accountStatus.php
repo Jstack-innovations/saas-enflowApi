@@ -14,7 +14,7 @@ if (!$email) {
 $now = new DateTime();
 
 $stmt = $pdo->prepare("
-    SELECT name, email, plan, status,
+    SELECT fullname AS name, email, plan, status,
            trial_started_at, trial_ends_at,
            renewal_date, subscription_code,
            zara_credits, zara_credits_used, created_at
