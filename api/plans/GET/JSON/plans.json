@@ -1,73 +1,65 @@
 {
-  "trialDays": 5,
+  "trialDays": 10,
   "plans": [
     {
       "title": "Web",
-      "subtitle": "Annual Deal",
-      "price": "$300",
-      "period": "/ year",
+      "subtitle": "Monthly Plan",
+      "price": "₦49,000",
+      "period": "/ month",
       "trialEnabled": true,
       "features": [
-        "All analytics dashboards",
-        "Export reports as PDF",
-        "Top-selling items view",
-        "Real-time order tracking",
-        "Zara AI assistant"
+        "QR menu ordering (dine-in, pickup, delivery)",
+        "Flutterwave payments (card, USSD, bank transfer)",
+        "Open tab with WhatsApp resume link",
+        "Order success page with scannable QR",
+        "Admin dashboard (orders, menu, tables, tax)",
+        "Banners, offers and promotions management",
+        "Business analytics (hourly, daily, weekly graphs)",
+        "Real-time Telegram reports + weekly email reports",
+        "PDF report export",
+        "Priority WhatsApp support"
       ],
-      "cta": "Pay Now",
-      "amount": 300
+      "cta": "Subscribe",
+      "amount": 49000
     },
     {
-      "title": "Web + App",
-      "subtitle": "Annual Deal",
-      "price": "$600",
-      "period": "/ year",
-      "badge": "BEST VALUE",
+      "title": "Web + Zara",
+      "subtitle": "Monthly Plan",
+      "price": "₦89,000",
+      "period": "/ month",
+      "badge": "MOST POPULAR",
       "highlight": true,
       "trialEnabled": true,
       "features": [
-        "Everything in Web Annual",
-        "iOS & Android mobile app",
-        "Cross-platform sync",
-        "Push notifications",
-        "Zara AI on mobile"
-      ],
-      "cta": "Pay Now",
-      "amount": 600
-    },
-    {
-      "title": "Web",
-      "subtitle": "Monthly",
-      "price": "$80",
-      "monthly": "then $20 / month",
-      "period": "first payment",
-      "trialEnabled": true,
-      "features": [
-        "Monthly flexibility",
-        "Automatic updates",
-        "Priority WhatsApp support",
-        "Analytics dashboards",
-        "Zara AI assistant"
+        "Everything in Web plan",
+        "Zara AI (1,000 credits/month)",
+        "Zara speaks and listens in real time",
+        "Live order announcements",
+        "Stock and revenue intelligence",
+        "Zara credit top-ups available",
+        "Priority WhatsApp support"
       ],
       "cta": "Subscribe",
-      "amount": 80
+      "amount": 89000
     },
     {
-      "title": "Web + App",
-      "subtitle": "Monthly",
-      "price": "$150",
-      "monthly": "then $35 / month",
-      "period": "first payment",
+      "title": "Web + Zara + App",
+      "subtitle": "Monthly Plan",
+      "price": "₦149,000",
+      "period": "/ month",
       "trialEnabled": true,
       "features": [
-        "Everything in Web Monthly",
-        "iOS & Android mobile app",
-        "Cross-platform sync",
-        "Push notifications",
-        "Priority support"
+        "Everything in Web + Zara plan",
+        "iOS and Android mobile app",
+        "Customer accounts with order history",
+        "Live order tracking on maps",
+        "Push notifications for order updates",
+        "Action centre (recipes, events, promotions, support)",
+        "Cross-platform sync between web and app",
+        "Zara AI on mobile (1,500 credits/month)"
       ],
       "cta": "Subscribe",
-      "amount": 150
+      "amount": 149000
     },
     {
       "title": "Enterprise",
@@ -76,11 +68,14 @@
       "period": "pricing",
       "trialEnabled": false,
       "features": [
-        "Personalized dashboards",
+        "Everything in Web + Zara + App",
         "Multiple branch support",
+        "Hardware as a Service (iPad + speaker)",
+        "Zara on hardware — speaks and listens physically",
+        "3,000+ Zara credits/month",
         "Dedicated account manager",
-        "Email & WhatsApp support",
-        "SLA guarantee"
+        "SLA uptime guarantee",
+        "Priority WhatsApp and email support"
       ],
       "cta": "Contact Us",
       "isContact": true
@@ -93,19 +88,27 @@
     },
     {
       "q": "Do I need a credit card to start the trial?",
-      "a": "No. You can start your 10-day free trial with just your email — no payment details required until you're ready to subscribe."
+      "a": "No. You can start your 10-day free trial with just your name, email and phone — no payment details required until you're ready to subscribe."
+    },
+    {
+      "q": "What are Zara credits and how do they work?",
+      "a": "Zara credits power every AI interaction — every order announcement, every question you ask her, every operation she runs. Each interaction consumes 1 credit. When you run out, you can top up anytime without waiting for renewal."
     },
     {
       "q": "Can I switch plans after subscribing?",
-      "a": "Yes, switch between monthly or annual plans anytime with no penalty."
+      "a": "Yes, switch between plans anytime with no penalty. Your data and credits carry over."
     },
     {
       "q": "What payment methods are accepted?",
       "a": "Card, bank transfer, and USSD via Flutterwave."
     },
     {
+      "q": "What is HaaS (Hardware as a Service)?",
+      "a": "Enterprise clients get physical hardware — an iPad and a smart speaker — so Zara can speak and listen in your restaurant physically, just like a real assistant on the floor."
+    },
+    {
       "q": "Need a custom plan?",
-      "a": "Email us or WhatsApp for enterprise solutions tailored to your business."
+      "a": "WhatsApp or email us for enterprise solutions tailored to your business size and needs."
     }
   ],
   "stats": [
@@ -118,17 +121,27 @@
     {
       "icon": "◈",
       "title": "Full Intelligence",
-      "desc": "Zara AI monitors every order, every table, every naira — in real time."
+      "desc": "Zara AI monitors every order, every table, every naira — in real time. She speaks, she listens, she never sleeps."
     },
     {
       "icon": "◉",
       "title": "Zero Manual Work",
-      "desc": "Automated reports, stock alerts, and Telegram updates without lifting a finger."
+      "desc": "Automated reports, stock alerts, Telegram updates and order announcements — all running without lifting a finger."
     },
     {
       "icon": "◇",
       "title": "Revenue Growth",
-      "desc": "Menu optimization, peak hour insights, and profit tracking built in."
+      "desc": "Menu optimization, peak hour insights, profit margin tracking and fast-rising product detection built right in."
+    },
+    {
+      "icon": "◎",
+      "title": "Any Device, Anywhere",
+      "desc": "Web dashboard, mobile app, iPad and smart speakers — Enflow runs your floor from every angle."
+    },
+    {
+      "icon": "◐",
+      "title": "Customer First",
+      "desc": "QR ordering, WhatsApp tab links, live delivery tracking and a seamless payment experience your customers will love."
     }
   ]
 }
