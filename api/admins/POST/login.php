@@ -64,9 +64,10 @@ if ($res->num_rows === 1) {
     $admin = $res->fetch_assoc();
     
     // Set session
-    $_SESSION['admin_id'] = $admin['id'];
-    $_SESSION['last_activity'] = time();
-    $_SESSION['expire_time'] = 30 * 60; // 30 min
+$_SESSION['admin_id'] = $admin['id'];
+$_SESSION['admin_email'] = $admin['email']; // ← add this
+$_SESSION['last_activity'] = time();
+$_SESSION['expire_time'] = 30 * 60;
 
     echo json_encode(["success" => true, "admin" => $admin]);
 } else {
