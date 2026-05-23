@@ -25,11 +25,12 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 require_once __DIR__ . '/../../SECURE/config.php';
-// Change this:
-//define("TRIAL_DAYS", 5);
+// Remove this:
+// define("TRIAL_DAYS", 5);
 
-// To this:
-define("TRIAL_DAYS", 10);
+// Add this:
+$setting = $pdo->query("SELECT setting_value FROM enflow_settings WHERE setting_key = 'trial_days' LIMIT 1")->fetch();
+$trialDays = (int)($setting["setting_value"] ?? 5);
 
 // ── Parse body ──
 $body = json_decode(file_get_contents("php://input"), true);
@@ -86,7 +87,7 @@ if ($existing) {
 
 // ── New user — create account and start trial ──
 $trialStart = date("Y-m-d H:i:s");
-$trialEnd   = date("Y-m-d H:i:s", strtotime("+" . TRIAL_DAYS . " days"));
+$trialEnd = date("Y-m-d H:i:s", strtotime("+" . $trialDays . " days"));
 $token      = bin2hex(random_bytes(32));
 
 try {
@@ -123,6 +124,7 @@ echo json_encode([
         "selected_plan"    => $plan,
         "trial_starts_at"  => $trialStart,
         "trial_ends_at"    => $trialEnd,
+        "trial_days" => $trialDays,
         "onboarding_token" => $token,
     ],
 ]);
