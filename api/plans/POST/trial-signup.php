@@ -34,15 +34,6 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit();
 }
 
-// Normalize phone
-$phone = preg_replace('/[\s\-\(\)]/', '', $phone);
-if (str_starts_with($phone, "+234")) $phone = "0" . substr($phone, 4);
-if (!preg_match('/^0[7-9][01]\d{8}$/', $phone)) {
-    http_response_code(422);
-    echo json_encode(["status" => "error", "message" => "Please enter a valid Nigerian phone number."]);
-    exit();
-}
-
 // ── Check if email OR phone already exists in subscriptions ──
 $stmt = $pdo->prepare("
     SELECT id, name, email, phone, status, trial_ends_at, renewal_date, plan
