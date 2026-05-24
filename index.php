@@ -324,7 +324,7 @@ if ($uri === "/settings") {
 
 /*POST*/
 if ($uri === "/subPlans") {
-    require $basePath . "/plans/POST/planPayment.php";
+    require $basePath . "/plans/POST/subPlans.php";
     exit;
 }
 if ($uri === "/trialSignup") {
