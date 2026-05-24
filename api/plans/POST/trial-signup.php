@@ -92,7 +92,7 @@ $stmt = $pdo->prepare("
         ":trial_end"    => $trialEnd,
         ":token"        => $token,
         ":sub_code"     => $subscriptionCode,
-        ":zara_credits" => 20, // trial credits
+        ":zara_credits" => 100, // trial credits
     ]);
 
     $userId = $pdo->lastInsertId();
