@@ -135,24 +135,24 @@ if ($checkStmt->num_rows > 0) {
             zara_credits_used = 0
         WHERE LOWER(email) = LOWER(?)
     ");
-    $updateStmt->bind_param(
-        "sssssssssdsssiss",
-        $fullname,
-        $username,
-        $phone,
-        $country,
-        $dob,
-        $gender,
-        $businessType,
-        $businessName,
-        $plan,
-        $amount,
-        $tx_id,
-        $subscriptionCode,
-        $renewalDate,
-        $zaraCredits,
-        $email
-    );
+$updateStmt->bind_param(
+    "sssssssssdsssis",  // ← 15 chars, removed one s
+    $fullname,
+    $username,
+    $phone,
+    $country,
+    $dob,
+    $gender,
+    $businessType,
+    $businessName,
+    $plan,
+    $amount,
+    $tx_id,
+    $subscriptionCode,
+    $renewalDate,
+    $zaraCredits,
+    $email
+);
 
     if (!$updateStmt->execute()) {
         echo json_encode(["status" => "error", "message" => $updateStmt->error]);
