@@ -49,7 +49,7 @@ if (!$email || !$password) {
     exit;
 }
 
-// ── Step 1: Check admin credentials ──
+// ── Step 1: Check admin credentials in their own DB ──
 $stmt = $conn->prepare("SELECT * FROM admins WHERE email = ? AND password = ?");
 $stmt->bind_param("ss", $email, $password);
 $stmt->execute();
@@ -63,31 +63,22 @@ if ($res->num_rows !== 1) {
 
 $admin = $res->fetch_assoc();
 
-// ── Step 2: Check subscription status ──
-$subStmt = $conn->prepare("
-    SELECT status, trial_ends_at, renewal_date, plan, zara_credits
-    FROM subscriptions
-    WHERE LOWER(email) = LOWER(?)
-    ORDER BY created_at DESC
-    LIMIT 1
-");
-$subStmt->bind_param("s", $admin['email']);
-$subStmt->execute();
-$subRes = $subStmt->get_result();
-$sub    = $subRes->fetch_assoc();
+// ── Step 2: Check subscription on central server ──
+$ch = curl_init("https://enflowsubscriptions.onrender.com/verifyAccess");
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_TIMEOUT        => 10,
+    CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
+    CURLOPT_POSTFIELDS     => json_encode(["email" => $admin['email']]),
+]);
+$curlRes  = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
 
-$now     = date("Y-m-d H:i:s");
-$allowed = false;
+$sub = json_decode($curlRes, true);
 
-if ($sub) {
-    if ($sub['status'] === 'trial' && $sub['trial_ends_at'] > $now) {
-        $allowed = true;
-    } elseif ($sub['status'] === 'active' && $sub['renewal_date'] >= date("Y-m-d")) {
-        $allowed = true;
-    }
-}
-
-if (!$allowed) {
+if ($httpCode !== 200 || ($sub['status'] ?? '') !== 'active') {
     http_response_code(403);
     echo json_encode([
         "error"   => "subscription_expired",
