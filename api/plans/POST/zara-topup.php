@@ -9,8 +9,9 @@ if (!$email) {
     exit();
 }
 
-$data = json_decode(file_get_contents("php://input"), true);
-$data["email"] = $email; // Override email from session — never trust client
+$raw  = file_get_contents("php://input");
+$data = json_decode($raw, true) ?? [];
+$data["email"] = $email;
 
 $ch = curl_init("https://enflowsubscriptions.onrender.com/zaraTopup");
 curl_setopt_array($ch, [
