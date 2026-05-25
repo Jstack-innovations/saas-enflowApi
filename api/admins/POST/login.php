@@ -1,20 +1,7 @@
 <?php
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'None'
-]);
-
-session_start();
-
+// No session needed anymore
 $file = __DIR__ . '/../../SECURE/db.php';
-
-if (!file_exists($file)) {
-    die(json_encode(["error" => "db.php not found"]));
-}
-
+if (!file_exists($file)) die(json_encode(["error" => "db.php not found"]));
 require_once $file;
 $conn->set_charset("latin1");
 
@@ -23,21 +10,16 @@ $allowedOrigins = [
     "https://artisangrills-production.up.railway.app",
     "https://admin-artisangrilluxe.vercel.app"
 ];
-
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
     header("Access-Control-Allow-Origin: $origin");
 }
-
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
 $input    = json_decode(file_get_contents("php://input"), true);
 $email    = trim($input['email'] ?? '');
@@ -49,7 +31,7 @@ if (!$email || !$password) {
     exit;
 }
 
-// ── Step 1: Check admin credentials in their own DB ──
+// Step 1: Check credentials
 $stmt = $conn->prepare("SELECT * FROM admins WHERE email = ? AND password = ?");
 $stmt->bind_param("ss", $email, $password);
 $stmt->execute();
@@ -60,10 +42,9 @@ if ($res->num_rows !== 1) {
     echo json_encode(["error" => "Invalid email or password"]);
     exit;
 }
-
 $admin = $res->fetch_assoc();
 
-// ── Step 2: Check subscription on central server ──
+// Step 2: Verify subscription on central server
 $ch = curl_init("https://enflowsubscriptions.onrender.com/verifyAccess");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -87,14 +68,21 @@ if ($httpCode !== 200 || ($sub['status'] ?? '') !== 'active') {
     exit;
 }
 
-// ── Step 3: All good — start session ──
-$_SESSION['admin_id']      = $admin['id'];
-$_SESSION['admin_email']   = $admin['email'];
-$_SESSION['last_activity'] = time();
-$_SESSION['expire_time']   = 30 * 60;
+// Step 3: Generate token and save to DB
+$token     = bin2hex(random_bytes(32)); // 64-char secure token
+$expiresAt = date("Y-m-d H:i:s", time() + 30 * 60); // 30 min
 
+$stmt2 = $conn->prepare(
+    "INSERT INTO admin_sessions (admin_id, token, last_activity, expires_at)
+     VALUES (?, ?, NOW(), ?)"
+);
+$stmt2->bind_param("iss", $admin['id'], $token, $expiresAt);
+$stmt2->execute();
+
+// Step 4: Return token to browser
 echo json_encode([
     "success" => true,
+    "token"   => $token,
     "admin"   => $admin,
     "subscription" => [
         "status"        => $sub['status'],
