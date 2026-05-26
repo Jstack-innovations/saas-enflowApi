@@ -18,7 +18,7 @@ $email = $admin['email'];
 // Proxy to central server
 //$ch = curl_init("https://enflowsubscriptions.onrender.com/accountStatus");
 // Proxy to central server
-$ch = curl_init("https://artisangrills-production.up.railway.app/accountStatus");
+$ch = curl_init("https://enflowsubscriptions-production.up.railway.app/accountStatus");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
