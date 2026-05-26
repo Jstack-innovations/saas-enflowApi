@@ -47,7 +47,7 @@ $admin = $res->fetch_assoc();
 // Step 2: Verify subscription on central server
 //$ch = curl_init("https://enflowsubscriptions.onrender.com/verifyAccess");
 // Step 2: Verify subscription on central server
-$ch = curl_init("https://enflowsubscriptions-production.up.railway.app.com/verifyAccess");
+$ch = curl_init("https://enflowsubscriptions-production.up.railway.app/verifyAccess");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
