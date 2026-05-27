@@ -81,7 +81,7 @@ while ($row = $res->fetch_assoc()) {
 
 /* ===== DAILY REVENUE - LAST 7 DAYS ===== */
 $dailyRevenue = [];
-for ($i = 6; $i >= 0; $i--) {
+for ($i = 29; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $dailyRevenue[$date] = 0;
 }
@@ -89,7 +89,7 @@ for ($i = 6; $i >= 0; $i--) {
 $sqlDaily = "
 SELECT DATE(created_at) as order_date, SUM(total_amount) as total
 FROM paid_orders
-WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
 GROUP BY DATE(created_at)
 ";
 $resDaily = $conn->query($sqlDaily);
