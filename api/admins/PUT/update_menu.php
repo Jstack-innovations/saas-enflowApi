@@ -124,6 +124,9 @@ if ($action === "delete") {
 }
 
 
+
+// PUSH ITEM TO KITCHEN
+
 //PUSH TO KITCHEN
 if ($action === "push_to_kitchen") {
 
@@ -142,6 +145,7 @@ if ($action === "push_to_kitchen") {
     echo json_encode(["success" => true]);
     exit;
 }
+
 
 
 
