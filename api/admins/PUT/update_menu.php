@@ -123,6 +123,29 @@ if ($action === "delete") {
     $stmt->execute();
 }
 
+
+//PUSH TO KITCHEN
+if ($action === "push_to_kitchen") {
+
+    $id       = intval($data['id'] ?? 0);
+    $name     = $data['name'] ?? "";
+    $quantity = intval($data['quantity'] ?? 0);
+    $note     = $data['note'] ?? "";
+
+    $stmt = $conn->prepare("
+        INSERT INTO kitchen_production (menu_id, menu_name, category, quantity, note)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+    $stmt->bind_param("issis", $id, $name, $category, $quantity, $note);
+    $stmt->execute();
+
+    echo json_encode(["success" => true]);
+    exit;
+}
+
+
+
+
 file_put_contents($menuFile, json_encode($menuJson, JSON_PRETTY_PRINT));
 
 echo json_encode(["success" => true]);
