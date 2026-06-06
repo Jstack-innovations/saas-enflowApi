@@ -170,6 +170,33 @@ try {
 
     $conn->commit();
 
+    // ===== TELEGRAM =====
+$botToken = getenv("TELEGRAM_BOT_TOKEN");
+$chatId   = getenv("TELEGRAM_CHAT_ID");
+
+$message = "✅ *Session Closed — Payment Confirmed!*\n\n🧾 *Order ID:* #{$order_id}\n💳 *Transaction ID:* {$ref}\n💰 *Amount:* ₦" . number_format($flutter_amount, 2) . "\n🔑 *Session:* {$session_code}";
+
+$ch = curl_init("https://api.telegram.org/bot{$botToken}/sendMessage");
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(["chat_id" => $chatId, "text" => $message, "parse_mode" => "Markdown"]));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_exec($ch);
+curl_close($ch);
+
+// ===== EMAIL =====
+require_once __DIR__ . '/../SECURE/gmailApi/resend_mailer.php';
+sendEmail(
+    "wsamson630@gmail.com",
+    "Session Closed — Order #{$order_id}",
+    "<h2>✅ Session Closed</h2>
+    <p><b>Order ID:</b> #{$order_id}</p>
+    <p><b>Transaction ID:</b> {$ref}</p>
+    <p><b>Amount:</b> ₦" . number_format($flutter_amount, 2) . "</p>
+    <p><b>Session Code:</b> {$session_code}</p>"
+);
+    
+
     echo json_encode([
         "status"   => "success",
         "order_id" => $order_id
