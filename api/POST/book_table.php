@@ -148,6 +148,37 @@ if ($reservation_id) {
         $emailBody
     );
 
+    $botToken = getenv("TELEGRAM_BOT_TOKEN");
+$chatId   = getenv("TELEGRAM_CHAT_ID");
+
+$message = "
+📅 *New Table Reservation!*
+
+🎟️ *Code:* {$reservation_code}
+👤 *Name:* {$name}
+📧 *Email:* {$email}
+📞 *Phone:* {$phone}
+🪑 *Table ID:* {$tableId}
+📆 *Date:* {$bookingDate}
+💰 *Amount:* ₦{$amount}
+💳 *Transaction ID:* {$transaction_id}
+";
+
+$url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+$payload = http_build_query([
+    "chat_id"    => $chatId,
+    "text"       => $message,
+    "parse_mode" => "Markdown"
+]);
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_exec($ch);
+curl_close($ch);
+
     echo json_encode([
         "success" => true,
         "reservation_id" => $reservation_id,
