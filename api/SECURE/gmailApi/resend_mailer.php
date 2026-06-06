@@ -5,7 +5,7 @@ function sendEmail($to, $subject, $body) {
    $apiKey = getenv("RESEND_API_KEY");
 
     $payload = [
-        "from" => "Grillux <onboarding@resend.dev>",
+        "from" => "EnflowAI Teams <hello@getenflowai.online>",
         "to" => is_array($to) ? $to : [$to],
         "subject" => $subject,
         "html" => $body
