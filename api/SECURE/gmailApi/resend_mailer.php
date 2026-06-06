@@ -5,7 +5,7 @@ function sendEmail($to, $subject, $body) {
    $apiKey = getenv("RESEND_API_KEY");
 
     $payload = [
-        "from" => "EnflowAI Teams <hello@getenflowai.online>",
+        "from" => "Grillux <onboarding@resend.dev>",
         "to" => is_array($to) ? $to : [$to],
         "subject" => $subject,
         "html" => $body
@@ -36,7 +36,7 @@ function sendEmail($to, $subject, $body) {
 
     $decoded = json_decode($response, true);
 
-    // 🔥 HARD FAILURE CHECK (IMPORTANT)
+    // ðŸ”¥ HARD FAILURE CHECK (IMPORTANT)
     if ($curlError) {
         return [
             "status" => "error",
