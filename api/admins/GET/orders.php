@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . "/../../SECURE/authGuard.php";
+//require_once __DIR__ . "/../../SECURE/authGuard.php";
 
 $file = __DIR__ . '/../../SECURE/db.php';
 
