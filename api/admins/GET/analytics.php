@@ -130,8 +130,7 @@ $sqlLastWeekLunch = "
     SELECT SUM(total_amount) as total
     FROM paid_orders
     WHERE HOUR(created_at) BETWEEN 12 AND 14
-    AND created_at BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-    AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    AND created_at BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
 ";
 $resLastWeekLunch = $conn->query($sqlLastWeekLunch);
 $lastWeekLunchRevenue = floatval($resLastWeekLunch->fetch_assoc()['total'] ?? 0);
