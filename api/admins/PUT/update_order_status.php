@@ -6,9 +6,10 @@ require_once __DIR__ . '/../../SECURE/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
-$id = $_POST['id'] ?? '';
-$status = $_POST['status'] ?? '';
-
+parse_str(file_get_contents("php://input"), $putData);
+$id = $putData['id'] ?? '';
+$status = $putData['status'] ?? '';
+    
 $stmt = $pdo->prepare("
     UPDATE paid_orders 
     SET order_status = ? 
