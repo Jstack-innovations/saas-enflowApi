@@ -21,7 +21,9 @@ try {
     ]);
 
 } catch (PDOException $e) {
-    die("DB Connection Failed: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+    exit;
 }
 
 ?>
