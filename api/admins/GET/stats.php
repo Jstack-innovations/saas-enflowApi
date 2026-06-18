@@ -98,6 +98,32 @@ while ($row = $resRecent->fetch_assoc()) {
     ];
 }
 
+// --- Top items today ---
+$sqlTopItems = "
+    SELECT i.menu_name, SUM(i.quantity) as total_qty
+    FROM paid_order_items i
+    JOIN paid_orders o ON i.paid_order_id = o.id
+    WHERE DATE(o.created_at) = CURDATE()
+    GROUP BY i.menu_name
+    ORDER BY total_qty DESC
+    LIMIT 4
+";
+$resTopItems = $conn->query($sqlTopItems);
+$topItemsTotal = 0;
+$topItemsRaw = [];
+while ($row = $resTopItems->fetch_assoc()) {
+    $topItemsRaw[] = $row;
+    $topItemsTotal += intval($row['total_qty']);
+}
+$topItems = [];
+foreach ($topItemsRaw as $row) {
+    $topItems[] = [
+        "name" => $row['menu_name'],
+        "qty"  => intval($row['total_qty']),
+        "pct"  => $topItemsTotal ? round((intval($row['total_qty']) / $topItemsTotal) * 100) : 0,
+    ];
+}
+
 // --- Output ---
 echo json_encode([
     "stats" => [
@@ -107,6 +133,7 @@ echo json_encode([
         "tables_total"     => $tablesTotal,
         "zara_chats_today" => 0,
         "daily_revenue"    => $dailyRevenueOutput,
-        "recent_orders"    => $recentOrders
+        "recent_orders"    => $recentOrders,
+        "top_items"        => $topItems
     ]
 ]);
