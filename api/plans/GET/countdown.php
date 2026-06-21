@@ -6,7 +6,11 @@ header("Content-Type: application/json");
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(200); exit(); }
 
 // Call central server with this local server's URL as identifier
-$localUrl = (isset($_SERVER["HTTPS"]) ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"];
+$isHttps = (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
+    || (isset($_SERVER["HTTP_X_FORWARDED_PROTO"]) && $_SERVER["HTTP_X_FORWARDED_PROTO"] === "https");
+
+$localUrl = ($isHttps ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"];
+
 
 $ch = curl_init("https://enflowsubscriptions-production.up.railway.app/countdown");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
