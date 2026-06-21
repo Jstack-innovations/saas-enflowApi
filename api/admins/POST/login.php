@@ -31,9 +31,9 @@ if (!$email || !$password) {
     exit;
 }
 
-// Step 1: Check credentials
-$stmt = $conn->prepare("SELECT * FROM admins WHERE email = ? AND password = ?");
-$stmt->bind_param("ss", $email, $password);
+// Step 1: Look up by email
+$stmt = $conn->prepare("SELECT * FROM admins WHERE email = ?");
+$stmt->bind_param("s", $email);
 $stmt->execute();
 $res = $stmt->get_result();
 
@@ -43,6 +43,13 @@ if ($res->num_rows !== 1) {
     exit;
 }
 $admin = $res->fetch_assoc();
+
+// Step 1b: Verify password against stored bcrypt hash
+if (!password_verify($password, $admin['password'])) {
+    http_response_code(401);
+    echo json_encode(["error" => "Invalid email or password"]);
+    exit;
+}
 
 // Step 2: Verify subscription on central server
 //$ch = curl_init("https://enflowsubscriptions.onrender.com/verifyAccess");
