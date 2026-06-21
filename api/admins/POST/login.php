@@ -3,6 +3,7 @@
 $file = __DIR__ . '/../../SECURE/db.php';
 if (!file_exists($file)) die(json_encode(["error" => "db.php not found"]));
 require_once $file;
+require_once __DIR__ . '/../../SECURE/central.php';
 $conn->set_charset("latin1");
 
 $allowedOrigins = [
@@ -52,9 +53,7 @@ if (!password_verify($password, $admin['password'])) {
 }
 
 // Step 2: Verify subscription on central server
-//$ch = curl_init("https://enflowsubscriptions.onrender.com/verifyAccess");
-// Step 2: Verify subscription on central server
-$ch = curl_init("https://enflowsubscriptions-production.up.railway.app/verifyAccess");
+$ch = curl_init(CENTRAL_SERVER . "/verifyAccess");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
