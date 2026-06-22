@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
+require_once __DIR__ . "/../../SECURE/centralProxy.php";
 
 // Get email from the session record authGuard already validated
 $stmt = $conn->prepare("SELECT email FROM admins WHERE id = ?");
@@ -16,9 +17,7 @@ if (!$admin) {
 $email = $admin['email'];
 
 // Proxy to central server
-//$ch = curl_init("https://enflowsubscriptions.onrender.com/accountStatus");
-// Proxy to central server
-$ch = curl_init("https://enflowsubscriptions-production.up.railway.app/accountStatus");
+$ch = curl_init(CENTRAL_SERVER . "/accountStatus");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
