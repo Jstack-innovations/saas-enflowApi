@@ -7,7 +7,8 @@ $allowedOrigins = [
     "http://localhost:5173",
     "https://artisangrills-production.up.railway.app",
     "https://artisangrills.onrender.com",
-    "https://admin-artisangrilluxe.vercel.app"
+    "https://admin-artisangrilluxe.vercel.app",
+    "https://app.getenflowai.online"
 ];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
@@ -15,13 +16,20 @@ if (in_array($origin, $allowedOrigins)) {
 }
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Tenant");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
-// Extract token from Authorization header
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (!$authHeader) {
+    $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+}
+if (!$authHeader) {
+    $headers = apache_request_headers();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+}
+
 if (!str_starts_with($authHeader, 'Bearer ')) {
     http_response_code(401);
     echo json_encode(["error" => "Unauthorized"]);
@@ -29,7 +37,6 @@ if (!str_starts_with($authHeader, 'Bearer ')) {
 }
 $token = trim(substr($authHeader, 7));
 
-// Validate token in DB
 $stmt = $conn->prepare(
     "SELECT * FROM admin_sessions WHERE token = ? AND expires_at > NOW()"
 );
@@ -43,7 +50,6 @@ if (!$session) {
     exit;
 }
 
-// Refresh last_activity and extend expiry (rolling 30-min window)
 $newExpiry = date("Y-m-d H:i:s", time() + 30 * 60);
 $stmt2 = $conn->prepare(
     "UPDATE admin_sessions SET last_activity = NOW(), expires_at = ? WHERE token = ?"
@@ -51,5 +57,5 @@ $stmt2 = $conn->prepare(
 $stmt2->bind_param("ss", $newExpiry, $token);
 $stmt2->execute();
 
-// Expose admin_id for downstream files
-$GLOBALS['admin_id'] = $session['admin_id'];
+$GLOBALS['admin_id']  = $session['admin_id'];
+$GLOBALS['tenant_id'] = $session['tenant_id'];

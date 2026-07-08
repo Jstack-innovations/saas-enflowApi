@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 require_once __DIR__ . "/../../SECURE/centralProxy.php";
 
-// Get email from the session record authGuard already validated
-$stmt = $conn->prepare("SELECT email FROM admins WHERE id = ?");
-$stmt->bind_param("i", $GLOBALS['admin_id']);
+$tenant_id = getTenantId($conn);
+
+$stmt = $conn->prepare("SELECT email FROM admins WHERE id = ? AND tenant_id = ?");
+$stmt->bind_param("ii", $GLOBALS['admin_id'], $tenant_id);
 $stmt->execute();
 $admin = $stmt->get_result()->fetch_assoc();
 
@@ -16,12 +18,15 @@ if (!$admin) {
 
 $email = $admin['email'];
 
-// Proxy to central server
 $ch = curl_init(CENTRAL_SERVER . "/accountStatus");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
     CURLOPT_TIMEOUT        => 30,
+    CURLOPT_SSL_VERIFYPEER => false, // local dev only — comment out in production
+    CURLOPT_SSL_VERIFYHOST => false, // local dev only — comment out in production
+    // CURLOPT_SSL_VERIFYPEER => true, // production
+    // CURLOPT_SSL_VERIFYHOST => 2,    // production
     CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
     CURLOPT_POSTFIELDS     => json_encode(["email" => $email]),
 ]);

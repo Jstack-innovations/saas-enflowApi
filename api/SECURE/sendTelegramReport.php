@@ -1,14 +1,24 @@
 <?php
+require_once __DIR__ . '/env.php';
 require_once __DIR__ . "/authGuard.php";
+require_once __DIR__ . '/tenant.php';
 
 header("Content-Type: application/json");
 
-$botToken = getenv("TELEGRAM_BOT_TOKEN");
-$chatId   = getenv("TELEGRAM_CHAT_ID");
+$tenant_id = getTenantId($conn);
 
-$file = __DIR__ . '/db.php';
-if (!file_exists($file)) die(json_encode(["error" => "db.php not found"]));
-require_once $file;
+// Pull telegram credentials from tenants table
+$stmt = $conn->prepare("SELECT telegram_bot_token, telegram_chat_id FROM tenants WHERE id = ?");
+$stmt->bind_param("i", $tenant_id);
+$stmt->execute();
+$stmt->bind_result($botToken, $chatId);
+$stmt->fetch();
+$stmt->close();
+
+if (!$botToken || !$chatId) {
+    echo json_encode(["success" => false, "message" => "Telegram not configured for this tenant"]);
+    exit;
+}
 
 $costPercentage = 0.65;
 
@@ -16,8 +26,9 @@ try {
     // ===== Today's Paid Revenue =====
     $stmt = $conn->prepare("
         SELECT SUM(total_amount) FROM paid_orders
-        WHERE status = 'paid' AND DATE(created_at) = CURDATE()
+        WHERE status = 'paid' AND DATE(created_at) = CURDATE() AND tenant_id = ?
     ");
+    $stmt->bind_param("i", $tenant_id);
     $stmt->execute();
     $stmt->bind_result($todayRevenue);
     $stmt->fetch();
@@ -27,8 +38,9 @@ try {
     // ===== All-Time Paid Revenue =====
     $stmt = $conn->prepare("
         SELECT SUM(total_amount) FROM paid_orders
-        WHERE status = 'paid'
+        WHERE status = 'paid' AND tenant_id = ?
     ");
+    $stmt->bind_param("i", $tenant_id);
     $stmt->execute();
     $stmt->bind_result($allTimeRevenue);
     $stmt->fetch();
@@ -38,7 +50,9 @@ try {
     // ===== All-Time Total Revenue (every status) =====
     $stmt = $conn->prepare("
         SELECT SUM(total_amount) FROM paid_orders
+        WHERE tenant_id = ?
     ");
+    $stmt->bind_param("i", $tenant_id);
     $stmt->execute();
     $stmt->bind_result($totalRevenue);
     $stmt->fetch();
@@ -106,4 +120,3 @@ try {
 } catch (Exception $e) {
     echo json_encode(["success" => false, "message" => $e->getMessage()]);
 }
-?>

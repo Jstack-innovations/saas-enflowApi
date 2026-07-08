@@ -1,42 +1,44 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
-require_once __DIR__ . "/../../SECURE/db.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-/* ===== LOAD MENU JSON ===== */
-$menuFile = __DIR__ . "/../../GET/JSON/menu.json";
-$menuJson = [];
-if (file_exists($menuFile)) {
-    $menuJson = json_decode(file_get_contents($menuFile), true) ?? [];
-}
+$tenant_id = getTenantId($conn);
+
+/* ===== FETCH MENU IMAGES FROM DB ===== */
 $menuImages = [];
-foreach ($menuJson as $category) {
-    foreach ($category as $m) {
-        $menuImages[$m['id']] = $m['image'];
-    }
+$menuStmt = $conn->prepare("SELECT id, image FROM menu_items WHERE tenant_id = ?");
+$menuStmt->bind_param("i", $tenant_id);
+$menuStmt->execute();
+$menuResult = $menuStmt->get_result();
+while ($m = $menuResult->fetch_assoc()) {
+    $menuImages[$m['id']] = $m['image'];
 }
 
 /* ===== FETCH ORDERS + ITEMS ===== */
-$sqlOrders = "
-SELECT 
-    o.id AS order_id,
-    o.table_no,
-    o.order_type,
-    o.total_amount,
-    o.created_at,
-    o.status,
-    o.plate_order_no,
-    o.order_status,
-    i.id AS order_item_id,
-    i.paid_order_id,
-    i.menu_id,
-    i.menu_name,
-    i.price,
-    i.quantity
-FROM paid_orders o
-LEFT JOIN paid_order_items i ON o.id = i.paid_order_id
-ORDER BY o.created_at DESC
-";
-$res = $conn->query($sqlOrders);
+$stmt = $conn->prepare("
+    SELECT 
+        o.id AS order_id,
+        o.table_no,
+        o.order_type,
+        o.total_amount,
+        o.created_at,
+        o.status,
+        o.plate_order_no,
+        o.order_status,
+        i.id AS order_item_id,
+        i.paid_order_id,
+        i.menu_id,
+        i.menu_name,
+        i.price,
+        i.quantity
+    FROM paid_orders o
+    LEFT JOIN paid_order_items i ON o.id = i.paid_order_id AND i.tenant_id = ?
+    WHERE o.tenant_id = ?
+    ORDER BY o.created_at DESC
+");
+$stmt->bind_param("ii", $tenant_id, $tenant_id);
+$stmt->execute();
+$res = $stmt->get_result();
 
 $orders = [];
 $totalPlaced = $totalServed = $totalDelivered = $totalPickup = $totalRevenue = 0;
@@ -85,13 +87,16 @@ for ($i = 6; $i >= 0; $i--) {
     $dailyRevenue[$date] = 0;
 }
 
-$sqlDaily = "
+$stmtDaily = $conn->prepare("
     SELECT DATE(created_at) as order_date, SUM(total_amount) as total
     FROM paid_orders
     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+    AND tenant_id = ?
     GROUP BY DATE(created_at)
-";
-$resDaily = $conn->query($sqlDaily);
+");
+$stmtDaily->bind_param("i", $tenant_id);
+$stmtDaily->execute();
+$resDaily = $stmtDaily->get_result();
 while ($row = $resDaily->fetch_assoc()) {
     $dailyRevenue[$row['order_date']] = floatval($row['total']);
 }
@@ -104,13 +109,15 @@ foreach ($dailyRevenue as $date => $total) {
 /* ===== HOURLY REVENUE - TODAY ===== */
 $hourlyRevenue = array_fill(0, 24, 0);
 
-$sqlHourly = "
+$stmtHourly = $conn->prepare("
     SELECT HOUR(created_at) as order_hour, SUM(total_amount) as total
     FROM paid_orders
-    WHERE DATE(created_at) = CURDATE()
+    WHERE DATE(created_at) = CURDATE() AND tenant_id = ?
     GROUP BY HOUR(created_at)
-";
-$resHourly = $conn->query($sqlHourly);
+");
+$stmtHourly->bind_param("i", $tenant_id);
+$stmtHourly->execute();
+$resHourly = $stmtHourly->get_result();
 while ($row = $resHourly->fetch_assoc()) {
     $hourlyRevenue[intval($row['order_hour'])] = floatval($row['total']);
 }
@@ -121,44 +128,51 @@ foreach ($hourlyRevenue as $hour => $total) {
 }
 
 /* ===== TODAY ORDERS COUNT ===== */
-$sqlToday = "SELECT COUNT(*) as cnt FROM paid_orders WHERE DATE(created_at) = CURDATE()";
-$resToday = $conn->query($sqlToday);
-$todayOrdersCount = intval($resToday->fetch_assoc()['cnt'] ?? 0);
+$stmtToday = $conn->prepare("SELECT COUNT(*) as cnt FROM paid_orders WHERE DATE(created_at) = CURDATE() AND tenant_id = ?");
+$stmtToday->bind_param("i", $tenant_id);
+$stmtToday->execute();
+$todayOrdersCount = intval($stmtToday->get_result()->fetch_assoc()['cnt'] ?? 0);
 
 /* ===== LAST WEEK LUNCH REVENUE ===== */
-$sqlLastWeekLunch = "
+$stmtLunch = $conn->prepare("
     SELECT SUM(total_amount) as total
     FROM paid_orders
     WHERE HOUR(created_at) BETWEEN 12 AND 14
     AND created_at BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-";
-$resLastWeekLunch = $conn->query($sqlLastWeekLunch);
-$lastWeekLunchRevenue = floatval($resLastWeekLunch->fetch_assoc()['total'] ?? 0);
+    AND tenant_id = ?
+");
+$stmtLunch->bind_param("i", $tenant_id);
+$stmtLunch->execute();
+$lastWeekLunchRevenue = floatval($stmtLunch->get_result()->fetch_assoc()['total'] ?? 0);
 
 /* ===== TOP ITEM THIS WEEK ===== */
-$sqlTopItem = "
+$stmtTopItem = $conn->prepare("
     SELECT i.menu_name, SUM(i.quantity) as total_qty
     FROM paid_order_items i
     JOIN paid_orders o ON i.paid_order_id = o.id
     WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    AND o.tenant_id = ?
     GROUP BY i.menu_name
     ORDER BY total_qty DESC
     LIMIT 1
-";
-$resTopItem  = $conn->query($sqlTopItem);
-$topItemRow  = $resTopItem->fetch_assoc();
+");
+$stmtTopItem->bind_param("i", $tenant_id);
+$stmtTopItem->execute();
+$topItemRow  = $stmtTopItem->get_result()->fetch_assoc();
 $topItemName = $topItemRow['menu_name'] ?? 'N/A';
 $topItemQty  = intval($topItemRow['total_qty'] ?? 0);
 
 /* ===== TOTAL ITEMS QTY THIS WEEK ===== */
-$sqlTotalQty = "
+$stmtTotalQty = $conn->prepare("
     SELECT SUM(i.quantity) as total
     FROM paid_order_items i
     JOIN paid_orders o ON i.paid_order_id = o.id
     WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-";
-$resTotalQty    = $conn->query($sqlTotalQty);
-$totalQtyWeek   = intval($resTotalQty->fetch_assoc()['total'] ?? 0);
+    AND o.tenant_id = ?
+");
+$stmtTotalQty->bind_param("i", $tenant_id);
+$stmtTotalQty->execute();
+$totalQtyWeek   = intval($stmtTotalQty->get_result()->fetch_assoc()['total'] ?? 0);
 $topItemPercent = $totalQtyWeek ? round(($topItemQty / $totalQtyWeek) * 100, 1) : 0;
 
 /* ===== FINAL OUTPUT ===== */

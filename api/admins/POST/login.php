@@ -1,15 +1,16 @@
 <?php
-// No session needed anymore
 $file = __DIR__ . '/../../SECURE/db.php';
 if (!file_exists($file)) die(json_encode(["error" => "db.php not found"]));
 require_once $file;
+require_once __DIR__ . '/../../SECURE/tenant.php';
 require_once __DIR__ . '/../../SECURE/centralProxy.php';
 $conn->set_charset("latin1");
 
 $allowedOrigins = [
     "http://localhost:5173",
     "https://artisangrills-production.up.railway.app",
-    "https://admin-artisangrilluxe.vercel.app"
+    "https://admin-artisangrilluxe.vercel.app",
+    "https://app.getenflowai.online"
 ];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
@@ -17,10 +18,12 @@ if (in_array($origin, $allowedOrigins)) {
 }
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Tenant");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
+
+$tenant_id = getTenantId($conn);
 
 $input    = json_decode(file_get_contents("php://input"), true);
 $email    = trim($input['email'] ?? '');
@@ -32,9 +35,8 @@ if (!$email || !$password) {
     exit;
 }
 
-// Step 1: Look up by email
-$stmt = $conn->prepare("SELECT * FROM admins WHERE email = ?");
-$stmt->bind_param("s", $email);
+$stmt = $conn->prepare("SELECT * FROM admins WHERE email = ? AND tenant_id = ?");
+$stmt->bind_param("si", $email, $tenant_id);
 $stmt->execute();
 $res = $stmt->get_result();
 
@@ -45,14 +47,13 @@ if ($res->num_rows !== 1) {
 }
 $admin = $res->fetch_assoc();
 
-// Step 1b: Verify password against stored bcrypt hash
 if (!password_verify($password, $admin['password'])) {
     http_response_code(401);
     echo json_encode(["error" => "Invalid email or password"]);
     exit;
 }
 
-// Step 2: Verify subscription on central server
+// Verify subscription on central server
 $ch = curl_init(CENTRAL_SERVER . "/verifyAccess");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -60,6 +61,8 @@ curl_setopt_array($ch, [
     CURLOPT_TIMEOUT        => 10,
     CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
     CURLOPT_POSTFIELDS     => json_encode(["email" => $admin['email']]),
+    CURLOPT_SSL_VERIFYPEER => false, // local only — disable in production
+    // CURLOPT_SSL_VERIFYPEER => true, // production — uncomment when deploying
 ]);
 $curlRes  = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -76,18 +79,16 @@ if ($httpCode !== 200 || ($sub['status'] ?? '') !== 'active') {
     exit;
 }
 
-// Step 3: Generate token and save to DB
-$token     = bin2hex(random_bytes(32)); // 64-char secure token
-$expiresAt = date("Y-m-d H:i:s", time() + 30 * 60); // 30 min
+$token     = bin2hex(random_bytes(32));
+$expiresAt = date("Y-m-d H:i:s", time() + 30 * 60);
 
-$stmt2 = $conn->prepare(
-    "INSERT INTO admin_sessions (admin_id, token, last_activity, expires_at)
-     VALUES (?, ?, NOW(), ?)"
-);
-$stmt2->bind_param("iss", $admin['id'], $token, $expiresAt);
+$stmt2 = $conn->prepare("
+    INSERT INTO admin_sessions (tenant_id, admin_id, token, last_activity, expires_at)
+    VALUES (?, ?, ?, NOW(), ?)
+");
+$stmt2->bind_param("iiss", $tenant_id, $admin['id'], $token, $expiresAt);
 $stmt2->execute();
 
-// Step 4: Return token to browser
 echo json_encode([
     "success" => true,
     "token"   => $token,
@@ -100,4 +101,3 @@ echo json_encode([
         "trial_ends_at" => $sub['trial_ends_at'],
     ]
 ]);
-?>

@@ -1,29 +1,8 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-$file = __DIR__ . '/../../SECURE/db.php';
-
-if (!file_exists($file)) {
-    die(json_encode(["error" => "db.php not found"]));
-}
-
-require_once $file;
-
-/* Load menu JSON */
-$menuFile = __DIR__ . "/../../GET/JSON/menu.json";
-$menuJson = [];
-
-if (file_exists($menuFile)) {
-    $menuJson = json_decode(file_get_contents($menuFile), true) ?? [];
-}
-
-/* Build image map */
-$menuImages = [];
-foreach ($menuJson as $category) {
-    foreach ($category as $m) {
-        $menuImages[$m['id']] = $m['image'];
-    }
-}
+$tenant_id = getTenantId($conn);
 
 $id = $_GET['id'] ?? null;
 
@@ -38,9 +17,19 @@ if (!$id) {
 ========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    // Fetch order info
-    $order = $conn->query("SELECT * FROM paid_orders WHERE id='$id'")
-                  ->fetch_assoc();
+    $menuImages = [];
+    $menuStmt = $conn->prepare("SELECT id, image FROM menu_items WHERE tenant_id = ?");
+    $menuStmt->bind_param("i", $tenant_id);
+    $menuStmt->execute();
+    $menuResult = $menuStmt->get_result();
+    while ($m = $menuResult->fetch_assoc()) {
+        $menuImages[$m['id']] = $m['image'];
+    }
+
+    $stmt = $conn->prepare("SELECT * FROM paid_orders WHERE id = ? AND tenant_id = ?");
+    $stmt->bind_param("ii", $id, $tenant_id);
+    $stmt->execute();
+    $order = $stmt->get_result()->fetch_assoc();
 
     if (!$order) {
         http_response_code(404);
@@ -48,30 +37,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    // Fetch order items
-    $itemsRes = $conn->query("
-        SELECT * FROM paid_order_items 
-        WHERE paid_order_id = '$id'
-    ");
+    $itemStmt = $conn->prepare("SELECT * FROM paid_order_items WHERE paid_order_id = ? AND tenant_id = ?");
+    $itemStmt->bind_param("ii", $id, $tenant_id);
+    $itemStmt->execute();
+    $itemsRes = $itemStmt->get_result();
 
     $items = [];
-
     while ($row = $itemsRes->fetch_assoc()) {
         $items[] = [
-            "name" => $row['menu_name'],
-            "price" => $row['price'],
-            "qty" => $row['quantity'],
-            "image" => $menuImages[$row['menu_id']] ?? "images/default.jpg",
-            "menu_id" => $row['menu_id'],
+            "name"          => $row['menu_name'],
+            "price"         => $row['price'],
+            "qty"           => $row['quantity'],
+            "image"         => $menuImages[$row['menu_id']] ?? "images/default.jpg",
+            "menu_id"       => $row['menu_id'],
             "order_item_id" => $row['id']
         ];
     }
 
     echo json_encode([
-        "info" => $order,
+        "info"  => $order,
         "items" => $items
     ]);
-
     exit;
 }
 
@@ -82,13 +68,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     $data = json_decode(file_get_contents("php://input"), true);
 
-    $stmt = $conn->prepare("UPDATE paid_orders SET 
-        name=?, phone=?, table_no=?, order_type=?, total_amount=?, 
-        payment_ref=?, order_status=?, full_address=?, plate_order_no=? 
-        WHERE id=?");
-
+    $stmt = $conn->prepare("
+        UPDATE paid_orders SET 
+        name = ?, phone = ?, table_no = ?, order_type = ?, total_amount = ?, 
+        payment_ref = ?, order_status = ?, full_address = ?, plate_order_no = ? 
+        WHERE id = ? AND tenant_id = ?
+    ");
     $stmt->bind_param(
-        "sssssssssi",
+        "sssssssssii",
         $data['name'],
         $data['phone'],
         $data['table_no'],
@@ -98,9 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $data['order_status'],
         $data['full_address'],
         $data['plate_order_no'],
-        $id
+        $id,
+        $tenant_id
     );
-
     $stmt->execute();
 
     echo json_encode(["success" => true]);

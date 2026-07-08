@@ -1,7 +1,7 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Tenant");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -10,6 +10,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../SECURE/db.php';
+require_once __DIR__ . '/../SECURE/tenant.php';
+
+$tenant_id = getTenantId($conn);
+
+// FIX 1: Fetch telegram + email credentials from tenants table (not getenv)
+$tenantStmt = $conn->prepare("SELECT notification_email, telegram_bot_token, telegram_chat_id FROM tenants WHERE id = ?");
+$tenantStmt->bind_param("i", $tenant_id);
+$tenantStmt->execute();
+$tenantRow   = $tenantStmt->get_result()->fetch_assoc();
+$notifyEmail = $tenantRow['notification_email'] ?? '';
+$botToken    = $tenantRow['telegram_bot_token'] ?? '';
+$chatId      = $tenantRow['telegram_chat_id'] ?? '';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -25,57 +37,49 @@ $conn->begin_transaction();
 
 try {
 
-    /* ===== FIND OPEN SESSION ===== */
-
     $stmt = $conn->prepare("
         SELECT id, total_amount, table_no
-FROM paid_orders 
-WHERE session_code=? 
-AND status='open'
-LIMIT 1
+        FROM paid_orders 
+        WHERE session_code = ? AND status = 'open' AND tenant_id = ?
+        LIMIT 1
     ");
-
-    $stmt->bind_param("s", $session_code);
+    $stmt->bind_param("si", $session_code, $tenant_id);
     $stmt->execute();
-
     $result = $stmt->get_result();
 
     if ($result->num_rows !== 1) {
         throw new Exception("Session not found or closed");
     }
 
-    $order = $result->fetch_assoc();
-    $order_id = $order['id'];
+    $order         = $result->fetch_assoc();
+    $order_id      = $order['id'];
     $current_total = $order['total_amount'];
-    $table_no = $order['table_no'];
+    $table_no      = $order['table_no'];
 
     $itemStmt = $conn->prepare("
         SELECT id, quantity 
         FROM paid_order_items 
-        WHERE paid_order_id=? 
-        AND menu_id=?
+        WHERE paid_order_id = ? AND menu_id = ? AND tenant_id = ?
         LIMIT 1
     ");
 
     $insertStmt = $conn->prepare("
         INSERT INTO paid_order_items
-        (paid_order_id, menu_id, menu_name, price, quantity)
-        VALUES (?, ?, ?, ?, ?)
+        (tenant_id, paid_order_id, menu_id, menu_name, price, quantity)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
 
     $updateQtyStmt = $conn->prepare("
         UPDATE paid_order_items 
         SET quantity = quantity + ?
-        WHERE id=?
+        WHERE id = ? AND tenant_id = ?
     ");
 
-    $new_total = $current_total;
-
+    $new_total    = $current_total;
     $emailsToSend = [];
 
     foreach ($cart as $item) {
 
-        /* ===== REDUCE STOCK ===== */
         $updateStock = $conn->prepare("
             UPDATE menu_stock 
             SET stock = stock - ?, 
@@ -83,111 +87,95 @@ LIMIT 1
                     WHEN stock - ? <= 0 THEN 0 
                     ELSE 1 
                 END
-            WHERE menu_id = ? 
-            AND stock >= ?
+            WHERE menu_id = ? AND stock >= ? AND tenant_id = ?
         ");
-
         $updateStock->bind_param(
-            "iiii",
+            "iiiii",
             $item['quantity'],
             $item['quantity'],
             $item['id'],
-            $item['quantity']
+            $item['quantity'],
+            $tenant_id
         );
-
         $updateStock->execute();
 
         if ($updateStock->affected_rows === 0) {
             throw new Exception("Not enough stock for " . $item['name']);
         }
 
-        /* ===== CHECK IF ITEM EXISTS ===== */
-        $itemStmt->bind_param("ii", $order_id, $item['id']);
+        $itemStmt->bind_param("iii", $order_id, $item['id'], $tenant_id);
         $itemStmt->execute();
         $itemResult = $itemStmt->get_result();
 
         if ($itemResult->num_rows === 1) {
 
             $existing = $itemResult->fetch_assoc();
-
-            $updateQtyStmt->bind_param(
-                "ii",
-                $item['quantity'],
-                $existing['id']
-            );
-
+            $updateQtyStmt->bind_param("iii", $item['quantity'], $existing['id'], $tenant_id);
             $updateQtyStmt->execute();
 
         } else {
 
-    $insertStmt->bind_param(
-        "iisdi",
-        $order_id,
-        $item['id'],
-        $item['name'],
-        $item['price'],
-        $item['quantity']
-    );
+            $insertStmt->bind_param(
+                "iiisdi",
+                $tenant_id,
+                $order_id,
+                $item['id'],
+                $item['name'],
+                $item['price'],
+                $item['quantity']
+            );
+            $insertStmt->execute();
 
-    $insertStmt->execute();
-
-    /* ===== SEND EMAIL FOR NEW ITEM ===== */
-
-    $emailsToSend[] = [
-    "name" => $item['name'],
-    "qty" => $item['quantity'],
-    "price" => $item['price']
-];
+            $emailsToSend[] = [
+                "name"  => $item['name'],
+                "qty"   => $item['quantity'],
+                "price" => $item['price']
+            ];
         }
 
         $new_total += ($item['price'] * $item['quantity']);
     }
 
-    /* ===== UPDATE TOTAL ===== */
     $updateTotal = $conn->prepare("
         UPDATE paid_orders 
-        SET total_amount=? 
-        WHERE id=?
+        SET total_amount = ? 
+        WHERE id = ? AND tenant_id = ?
     ");
-
-    $updateTotal->bind_param("di", $new_total, $order_id);
+    $updateTotal->bind_param("dii", $new_total, $order_id, $tenant_id);
     $updateTotal->execute();
 
     $conn->commit();
 
-require_once __DIR__ . '/../SECURE/gmailApi/resend_mailer.php';
+    // FIX 2: Correct resendMail path (matches createSession and closeSession)
+    require_once __DIR__ . '/../SECURE/resendMail.php';
 
-$botToken = getenv("TELEGRAM_BOT_TOKEN");
-$chatId   = getenv("TELEGRAM_CHAT_ID");
+    foreach ($emailsToSend as $item) {
 
-foreach ($emailsToSend as $item) {
-    // Telegram
-    $message = "🛒 *New Item Added to Session!*\n\n🔑 *Session:* {$session_code}\n🧾 *Order ID:* #{$order_id}\n🪑 *Table:* {$table_no}\n🍽️ *Item:* {$item['name']}\n📦 *Qty:* {$item['qty']}\n💰 *Price:* ₦{$item['price']}";
-    $ch = curl_init("https://api.telegram.org/bot{$botToken}/sendMessage");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(["chat_id" => $chatId, "text" => $message, "parse_mode" => "Markdown"]));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_exec($ch);
-    curl_close($ch);
+        $message = "🛒 *New Item Added to Session!*\n\n🔑 *Session:* {$session_code}\n🧾 *Order ID:* #{$order_id}\n🪑 *Table:* {$table_no}\n🍽️ *Item:* {$item['name']}\n📦 *Qty:* {$item['qty']}\n💰 *Price:* ₦{$item['price']}";
 
-    // Email
-    sendEmail(
-        "wsamson630@gmail.com",
-        "New Order Item - {$item['name']}",
-        "<h2>🔥 New Item Ordered</h2>
-        <p><b>Session:</b> {$session_code}</p>
-        <p><b>Order ID:</b> #{$order_id}</p>
-        <p><b>Table No:</b> {$table_no}</p>
-        <p><b>Item:</b> {$item['name']}</p>
-        <p><b>Qty:</b> {$item['qty']}</p>
-        <p><b>Price:</b> ₦{$item['price']}</p>"
-    );
-}
-    
+        $ch = curl_init("https://api.telegram.org/bot{$botToken}/sendMessage");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(["chat_id" => $chatId, "text" => $message, "parse_mode" => "Markdown"]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_exec($ch);
+        curl_close($ch);
+
+        sendEmail(
+            $notifyEmail,
+            "New Order Item - {$item['name']}",
+            "<h2>🔥 New Item Ordered</h2>
+            <p><b>Session:</b> {$session_code}</p>
+            <p><b>Order ID:</b> #{$order_id}</p>
+            <p><b>Table No:</b> {$table_no}</p>
+            <p><b>Item:</b> {$item['name']}</p>
+            <p><b>Qty:</b> {$item['qty']}</p>
+            <p><b>Price:</b> ₦{$item['price']}</p>"
+        );
+    }
 
     echo json_encode([
-        "status" => "success",
+        "status"    => "success",
         "new_total" => $new_total
     ]);
 
@@ -196,7 +184,7 @@ foreach ($emailsToSend as $item) {
     $conn->rollback();
 
     echo json_encode([
-        "status" => "error",
+        "status"  => "error",
         "message" => $e->getMessage()
     ]);
 }

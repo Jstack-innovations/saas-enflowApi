@@ -2,154 +2,123 @@
 
 require_once __DIR__ . "/../../SECURE/authGuard.php";
 require_once __DIR__ . "/../../SECURE/db.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-$menuFile = __DIR__ . "/../../GET/JSON/menu.json";
+$tenant_id = getTenantId($conn);
 
-$menuJson = json_decode(file_get_contents($menuFile), true);
-
-/* 🔥 SAFE INPUT PARSING */
-$raw = file_get_contents("php://input");
+$raw  = file_get_contents("php://input");
 $data = json_decode($raw, true);
 
-/* 🚨 STOP CRASH HERE */
 if (!is_array($data)) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Invalid or missing JSON body"
-    ]);
+    echo json_encode(["success" => false, "error" => "Invalid or missing JSON body"]);
     exit;
 }
 
-$action = $data['action'] ?? null;
+$action   = $data['action'] ?? null;
 $category = $data['category'] ?? null;
 
 if (!$action || !$category) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Missing action or category"
-    ]);
+    echo json_encode(["success" => false, "error" => "Missing action or category"]);
     exit;
 }
 
+/* ── ADD ── */
 if ($action === "add") {
 
-    $maxId = 0;
-
-    foreach ($menuJson as $cat) {
-        foreach ($cat as $item) {
-            if ($item['id'] > $maxId) {
-                $maxId = $item['id'];
-            }
-        }
-    }
-
-    $newId = $maxId + 1;
-
-    $menuJson[$category][] = [
-        "id" => $newId,
-        "name" => $data['name'] ?? "",
-        "description" => $data['description'] ?? "",
-        "price" => floatval($data['price'] ?? 0),
-        "image" => $data['image'] ?? "",
-        "tags" => $data['tags'] ?? [],
-        "badge" => $data['badge'] ?? ""
-        // ❌ removed stock + available from JSON (handled in DB)
-    ];
-
-    /* ✅ INSERT STOCK + AVAILABLE INTO DB */
-    $stock = intval($data['stock'] ?? 0);
-    $available = filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+    $name        = $data['name']        ?? "";
+    $description = $data['description'] ?? "";
+    $price       = floatval($data['price'] ?? 0);
+    $image       = $data['image']       ?? "";
+    $tags        = json_encode($data['tags'] ?? []);
+    $badge       = $data['badge']       ?? "";
+    $stock       = intval($data['stock'] ?? 0);
+    $available   = filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
     $stmt = $conn->prepare("
-        INSERT INTO menu_stock (menu_id, stock, available)
-        VALUES (?, ?, ?)
+        INSERT INTO menu_items (tenant_id, category, name, description, price, image, tags, badge)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->bind_param("iii", $newId, $stock, $available);
+    $stmt->bind_param("isssdsss", $tenant_id, $category, $name, $description, $price, $image, $tags, $badge);
     $stmt->execute();
+    $newId = $conn->insert_id;
+
+    $stmt2 = $conn->prepare("
+        INSERT INTO menu_stock (tenant_id, menu_id, stock, available)
+        VALUES (?, ?, ?, ?)
+    ");
+    $stmt2->bind_param("iiii", $tenant_id, $newId, $stock, $available);
+    $stmt2->execute();
+
+    echo json_encode(["success" => true, "id" => $newId]);
+    exit;
 }
 
+/* ── UPDATE ── */
 if ($action === "update") {
 
-    $id = intval($data['id'] ?? 0);
-
-    foreach ($menuJson[$category] as $index => $item) {
-
-        if ($item['id'] == $id) {
-
-            $menuJson[$category][$index] = [
-                "id" => $id,
-                "name" => $data['name'] ?? "",
-                "description" => $data['description'] ?? "",
-                "price" => floatval($data['price'] ?? 0),
-                "image" => $data['image'] ?? "",
-                "tags" => $data['tags'] ?? [],
-                "badge" => $data['badge'] ?? ""
-                // ❌ removed stock + available from JSON
-            ];
-
-            break;
-        }
-    }
-
-    /* ✅ UPDATE STOCK + AVAILABLE IN DB ONLY */
-    $stock = intval($data['stock'] ?? 0);
-    $available = filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+    $id          = intval($data['id'] ?? 0);
+    $name        = $data['name']        ?? "";
+    $description = $data['description'] ?? "";
+    $price       = floatval($data['price'] ?? 0);
+    $image       = $data['image']       ?? "";
+    $tags        = json_encode($data['tags'] ?? []);
+    $badge       = $data['badge']       ?? "";
+    $stock       = intval($data['stock'] ?? 0);
+    $available   = filter_var($data['available'] ?? true, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
     $stmt = $conn->prepare("
-        UPDATE menu_stock 
-        SET stock = ?, available = ? 
-        WHERE menu_id = ?
+        UPDATE menu_items
+        SET category = ?, name = ?, description = ?, price = ?, image = ?, tags = ?, badge = ?
+        WHERE id = ? AND tenant_id = ?
     ");
-
-    $stmt->bind_param("iii", $stock, $available, $id);
+    $stmt->bind_param("sssdsssii", $category, $name, $description, $price, $image, $tags, $badge, $id, $tenant_id);
     $stmt->execute();
+
+    $stmt2 = $conn->prepare("
+        UPDATE menu_stock SET stock = ?, available = ?
+        WHERE menu_id = ? AND tenant_id = ?
+    ");
+    $stmt2->bind_param("iiii", $stock, $available, $id, $tenant_id);
+    $stmt2->execute();
+
+    echo json_encode(["success" => true]);
+    exit;
 }
 
+/* ── DELETE ── */
 if ($action === "delete") {
 
     $id = intval($data['id'] ?? 0);
 
-    foreach ($menuJson[$category] as $index => $item) {
-
-        if ($item['id'] == $id) {
-            array_splice($menuJson[$category], $index, 1);
-            break;
-        }
-    }
-
-    /* OPTIONAL: clean DB too */
-    $stmt = $conn->prepare("DELETE FROM menu_stock WHERE menu_id = ?");
-    $stmt->bind_param("i", $id);
+    $stmt = $conn->prepare("DELETE FROM menu_items WHERE id = ? AND tenant_id = ?");
+    $stmt->bind_param("ii", $id, $tenant_id);
     $stmt->execute();
+
+    $stmt2 = $conn->prepare("DELETE FROM menu_stock WHERE menu_id = ? AND tenant_id = ?");
+    $stmt2->bind_param("ii", $id, $tenant_id);
+    $stmt2->execute();
+
+    echo json_encode(["success" => true]);
+    exit;
 }
 
-
-
-// PUSH ITEM TO KITCHEN
-
-//PUSH TO KITCHEN
+/* ── PUSH TO KITCHEN ── */
 if ($action === "push_to_kitchen") {
 
-    $id       = intval($data['id'] ?? 0);
-    $name     = $data['name'] ?? "";
+    $id       = intval($data['id']       ?? 0);
+    $name     = $data['name']            ?? "";
     $quantity = intval($data['quantity'] ?? 0);
-    $note     = $data['note'] ?? "";
+    $note     = $data['note']            ?? "";
 
     $stmt = $conn->prepare("
-        INSERT INTO kitchen_production (menu_id, menu_name, category, quantity, note)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO kitchen_production (tenant_id, menu_id, menu_name, category, quantity, note)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $stmt->bind_param("issis", $id, $name, $category, $quantity, $note);
+    $stmt->bind_param("iissis", $tenant_id, $id, $name, $category, $quantity, $note);
     $stmt->execute();
 
     echo json_encode(["success" => true]);
     exit;
 }
 
-
-
-
-
-file_put_contents($menuFile, json_encode($menuJson, JSON_PRETTY_PRINT));
-
-echo json_encode(["success" => true]);
+echo json_encode(["success" => false, "error" => "Unknown action"]);

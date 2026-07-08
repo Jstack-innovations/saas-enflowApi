@@ -2,43 +2,40 @@
 require_once __DIR__ . "/../../SECURE/authGuard.php";
 
 $file = __DIR__ . '/../../SECURE/db.php';
-
 if (!file_exists($file)) {
     die(json_encode(["error" => "db.php not found"]));
 }
 
 require_once $file;
-
-/* Load tables JSON */
-$tablesFile = __DIR__ . "/../../GET/JSON/tables.json";
-
-$tablesJson = [];
-
-if (file_exists($tablesFile)) {
-    $tablesJson = json_decode(file_get_contents($tablesFile), true) ?? [];
-}
-
-/* Flatten tables from floors */
-if (isset($tablesJson['floors']) && is_array($tablesJson['floors'])) {
-    foreach ($tablesJson['floors'] as $floorTables) {
-        foreach ($floorTables as $t) {
-            $tables[$t['id']] = $t;
-        }
-    }
-}
+require_once __DIR__ . '/../../SECURE/tenant.php';
 
 header('Content-Type: application/json');
 
-/* Fetch reservations */
-$res = $conn->query("SELECT * FROM reservations ORDER BY created_at DESC");
+$tenant_id = getTenantId($conn);
+
+/* ===== FETCH RESERVATIONS ===== */
+$stmt = $conn->prepare("SELECT * FROM reservations WHERE tenant_id = ? ORDER BY created_at DESC");
+$stmt->bind_param("i", $tenant_id);
+$stmt->execute();
+$res = $stmt->get_result();
+
 $reservations = [];
 while ($row = $res->fetch_assoc()) {
     $reservations[] = $row;
 }
 
+/* ===== FETCH TABLES FROM DB ===== */
+$stmtTables = $conn->prepare("SELECT * FROM restaurant_tables WHERE tenant_id = ? ORDER BY id ASC");
+$stmtTables->bind_param("i", $tenant_id);
+$stmtTables->execute();
+$tablesResult = $stmtTables->get_result();
+
+$tables = [];
+while ($row = $tablesResult->fetch_assoc()) {
+    $tables[] = $row;
+}
+
 echo json_encode([
     "reservations" => $reservations,
-    "tables" => array_values($tables)
+    "tables"       => $tables
 ]);
-exit;
-?>

@@ -2,12 +2,14 @@
 require_once __DIR__ . "/../../SECURE/authGuard.php";
 
 $file = __DIR__ . '/../../SECURE/db.php';
-
 if (!file_exists($file)) {
     die(json_encode(["error" => "db.php not found"]));
 }
 
 require_once $file;
+require_once __DIR__ . '/../../SECURE/tenant.php';
+
+$tenant_id = getTenantId($conn);
 
 $input = json_decode(file_get_contents("php://input"), true);
 
@@ -17,27 +19,43 @@ if (!$input) {
 }
 
 if ($input['action'] === 'update') {
+
     $r = $input['reservation'];
-    $sql = "UPDATE reservations SET
-        name='{$r['name']}',
-        email='{$r['email']}',
-        phone='{$r['phone']}',
-        booking_date='{$r['booking_date']}',
-        transaction_id='{$r['transaction_id']}',
-        status='{$r['status']}',
-        reservation_code='{$r['reservation_code']}'
-        WHERE id='{$r['id']}'";
-    $conn->query($sql);
+
+    $stmt = $conn->prepare("
+        UPDATE reservations
+        SET name = ?, email = ?, phone = ?, booking_date = ?,
+            transaction_id = ?, status = ?, reservation_code = ?
+        WHERE id = ? AND tenant_id = ?
+    ");
+    $stmt->bind_param(
+    "sssssissi",
+    $r['name'],
+    $r['email'],
+    $r['phone'],
+    $r['booking_date'],
+    $r['transaction_id'],
+    $r['status'],
+    $r['reservation_code'],
+    $r['id'],
+    $tenant_id
+);
+    $stmt->execute();
+
     echo json_encode(["success" => true]);
     exit;
 }
 
 if ($input['action'] === 'delete') {
+
     $id = $input['id'];
-    $conn->query("DELETE FROM reservations WHERE id='$id'");
+
+    $stmt = $conn->prepare("DELETE FROM reservations WHERE id = ? AND tenant_id = ?");
+    $stmt->bind_param("ii", $id, $tenant_id);
+    $stmt->execute();
+
     echo json_encode(["success" => true]);
     exit;
 }
 
 echo json_encode(["error" => "Invalid action"]);
-?>

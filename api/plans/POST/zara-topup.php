@@ -1,14 +1,16 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
 require_once __DIR__ . "/../../SECURE/centralProxy.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-$adminId = $GLOBALS['admin_id'];
+$tenant_id = getTenantId($conn);
+$adminId   = $GLOBALS['admin_id'];
 
-$stmt = $conn->prepare("SELECT email FROM admins WHERE id = ?");
-$stmt->bind_param("i", $adminId);
+$stmt = $conn->prepare("SELECT email FROM admins WHERE id = ? AND tenant_id = ?");
+$stmt->bind_param("ii", $adminId, $tenant_id);
 $stmt->execute();
 $admin = $stmt->get_result()->fetch_assoc();
-$email = $admin["email"] ?? "";
+$email = $admin['email'] ?? "";
 
 if (!$email) {
     http_response_code(401);
@@ -18,13 +20,16 @@ if (!$email) {
 
 $raw  = file_get_contents("php://input");
 $data = json_decode($raw, true) ?? [];
-$data["email"] = $email;
+$data['email']     = $email;
+$data['tenant_id'] = $tenant_id;
 
 $ch = curl_init(CENTRAL_SERVER . "/zaraTopup");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
     CURLOPT_TIMEOUT        => 20,
+    // CURLOPT_SSL_VERIFYPEER => true,  // production
+    CURLOPT_SSL_VERIFYPEER => false,    // local
     CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
     CURLOPT_POSTFIELDS     => json_encode($data),
 ]);

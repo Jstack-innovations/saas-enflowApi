@@ -1,7 +1,7 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Tenant");
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -9,16 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-
 $file = __DIR__ . '/../SECURE/db.php';
-
 if (!file_exists($file)) {
     die(json_encode(["error" => "db.php not found"]));
 }
 
 require_once $file;
+require_once __DIR__ . '/../SECURE/tenant.php';
 
-
+$tenant_id = getTenantId($conn);
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -31,70 +30,49 @@ $orderType   = $data['order_type'] ?? 'table';
 $total       = $data['amount'] ?? 0;
 $cart        = $data['cart'] ?? [];
 
-
-
-/* ===== VALIDATION ===== */
-
 if (!$name || !$phone || empty($cart)) {
     echo json_encode(["status" => "error", "message" => "Missing data"]);
     exit;
 }
 
-/* ===== PICKUP HANDLING ===== */
-
 if ($orderType === 'pickup') {
     $tableNo = '';
 }
 
-
-
-/* ===== SESSION TOKEN (IF USER IS LOGGED IN) ===== */
 $sessionToken = $data['session_token'] ?? null;
 $user_id = null;
 
 if ($sessionToken) {
-
     $sessionStmt = $conn->prepare("
         SELECT user_id 
         FROM user_sessions 
-        WHERE session_token=? 
-        AND expires_at > NOW()
+        WHERE session_token = ? AND expires_at > NOW() AND tenant_id = ?
         LIMIT 1
     ");
-
-    $sessionStmt->bind_param("s", $sessionToken);
+    $sessionStmt->bind_param("si", $sessionToken, $tenant_id);
     $sessionStmt->execute();
-
     $sessionResult = $sessionStmt->get_result();
 
     if ($sessionResult->num_rows === 1) {
-        $sessionRow = $sessionResult->fetch_assoc();
-        $user_id = $sessionRow['user_id'];
+        $user_id = $sessionResult->fetch_assoc()['user_id'];
     }
 }
 
-/* ===== IF NOT LOGGED IN → TRY MATCH PHONE ===== */
 if (!$user_id && $phone) {
-
     $userCheck = $conn->prepare("
         SELECT id 
         FROM users 
-        WHERE phone=?
+        WHERE phone = ? AND tenant_id = ?
         LIMIT 1
     ");
-
-    $userCheck->bind_param("s", $phone);
+    $userCheck->bind_param("si", $phone, $tenant_id);
     $userCheck->execute();
-
     $userResult = $userCheck->get_result();
 
     if ($userResult->num_rows === 1) {
-        $userRow = $userResult->fetch_assoc();
-        $user_id = $userRow['id'];
+        $user_id = $userResult->fetch_assoc()['id'];
     }
 }
-
-
 
 $plate_no = "Artisan" . date("Ymd") . "GRILL" . str_pad(rand(0, 99), 2, "0", STR_PAD_LEFT);
 
@@ -102,20 +80,18 @@ $conn->begin_transaction();
 
 try {
 
-    /* ===== INSERT ORDER WITH STATUS = payment_pending ===== */
-    /* Kitchen does NOT see this — only 'paid' orders are shown to kitchen */
-
     $stmt = $conn->prepare("
         INSERT INTO paid_orders
-        (user_id, name, phone, table_no, full_address, order_type,
+        (tenant_id, user_id, name, phone, table_no, full_address, order_type,
          total_amount, plate_order_no, status, pickup_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $status = "payment_pending";
 
     $stmt->bind_param(
-        "isssssdsss",
+        "iisssssdsss",
+        $tenant_id,
         $user_id,
         $name,
         $phone,
@@ -131,35 +107,33 @@ try {
     $stmt->execute();
     $paid_order_id = $stmt->insert_id;
 
-    /* ===== INSERT ORDER ITEMS ===== */
-
     $itemStmt = $conn->prepare("
         INSERT INTO paid_order_items
-        (paid_order_id, menu_id, menu_name, price, quantity)
-        VALUES (?, ?, ?, ?, ?)
+        (tenant_id, paid_order_id, menu_id, menu_name, price, quantity)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
 
     foreach ($cart as $item) {
-
         $itemStmt->bind_param(
-            "iisdi",
+            "iiisdi",
+            $tenant_id,
             $paid_order_id,
             $item['id'],
             $item['name'],
             $item['price'],
             $item['quantity']
         );
-
         $itemStmt->execute();
     }
 
     $conn->commit();
 
-    echo json_encode([
-        "status"   => "success",
-        "order_id" => $paid_order_id,
-        "user_id"  => $user_id
-    ]);
+echo json_encode([
+    "status"   => "success",
+    "order_id" => $paid_order_id,
+    "tenant_id" => $tenant_id,
+    "user_id"  => $user_id
+]);
 
 } catch (Exception $e) {
 

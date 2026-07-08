@@ -1,15 +1,38 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, X-Tenant");
 header("Content-Type: application/json");
 
-$file = __DIR__ . "/../JSON/offers.json";
-
-if (!file_exists($file)) {
-    http_response_code(404);
-    echo json_encode(["error" => "offer not found"]);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit;
 }
 
-echo file_get_contents($file);
+$file = __DIR__ . '/../../SECURE/db.php';
+if (!file_exists($file)) {
+    die(json_encode(["error" => "db.php not found"]));
+}
 
+require_once $file;
+require_once __DIR__ . '/../../SECURE/tenant.php';
+
+$tenant_id = getTenantId($conn);
+
+$stmt = $conn->prepare("SELECT * FROM offers WHERE tenant_id = ?");
+$stmt->bind_param("i", $tenant_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if (!$result) {
+    http_response_code(500);
+    echo json_encode(["error" => "query failed"]);
+    exit;
+}
+
+$offers = [];
+while ($row = $result->fetch_assoc()) {
+    $offers[] = $row;
+}
+
+echo json_encode($offers);

@@ -1,44 +1,41 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, X-Tenant");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 require_once __DIR__ . "/../../SECURE/db.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-$menuFile = __DIR__ . "/../../GET/JSON/menu.json";
+$tenant_id = getTenantId($conn);
 
-$menuJson = json_decode(file_get_contents($menuFile), true);
+$stmt = $conn->prepare("
+    SELECT 
+        m.id,
+        m.category,
+        m.name,
+        m.description,
+        m.price,
+        m.image,
+        m.tags,
+        m.badge,
+        COALESCE(s.stock, 0) AS stock,
+        COALESCE(s.available, 0) AS available
+    FROM menu_items m
+    LEFT JOIN menu_stock s ON m.id = s.menu_id AND s.tenant_id = ?
+    WHERE m.tenant_id = ?
+    ORDER BY m.id ASC
+");
+$stmt->bind_param("ii", $tenant_id, $tenant_id);
+$stmt->execute();
+$result = $stmt->get_result();
 
-/* ===== ADD STOCK ONLY ===== */
-
-$stockResult = $conn->query("SELECT menu_id, stock, available FROM menu_stock");
-
-$stockMap = [];
-
-while ($row = $stockResult->fetch_assoc()) {
-    $stockMap[$row["menu_id"]] = [
-        "stock" => (int)$row["stock"],
-        "available" => (int)$row["available"]
-    ];
+$menuJson = [];
+while ($row = $result->fetch_assoc()) {
+    $category = $row['category'];
+    $row['tags'] = json_decode($row['tags'], true) ?? [];
+    unset($row['category']);
+    $menuJson[$category][] = $row;
 }
 
-/* merge into existing menu */
-foreach ($menuJson as $category => &$items) {
-    foreach ($items as &$item) {
-
-        $id = $item["id"];
-
-        if (isset($stockMap[$id])) {
-            $item["stock"] = $stockMap[$id]["stock"];
-            $item["available"] = $stockMap[$id]["available"];
-        } else {
-            $item["stock"] = 0;
-            $item["available"] = 0;
-        }
-    }
-}
-
-echo json_encode([
-    "menu" => $menuJson
-]);
+echo json_encode(["menu" => $menuJson]);

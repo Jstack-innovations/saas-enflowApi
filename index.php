@@ -2,8 +2,17 @@
 
 header('Content-Type: application/json');
 
+
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = rtrim($uri, '/');
+
+/*THIS LINE FOR LOCAL SERVER ROUTING*/
+$baseName = '/saas-enflowApi';
+if (str_starts_with($uri, $baseName)) {
+    $uri = substr($uri, strlen($baseName));
+}
+/*END IT*/
+
 
 $basePath = __DIR__ . "/api";
 
@@ -94,6 +103,14 @@ if ($uri === "/confirmOrder") {
     require $basePath . "/POST/confirm-order.php";
     exit;
 }
+if ($uri === "/webHook") {
+    require $basePath . "/POST/webhook.php";
+    exit;
+}
+if ($uri === "/checkOrderStatus") {
+    require $basePath . "/POST/check-orderStatus.php";
+    exit;
+}
 
 if ($uri === "/createSession") {
     require $basePath . "/POST/create-session.php";
@@ -146,21 +163,43 @@ if ($uri === "/session") {
 }
 
 
+/*FOR TESTING*/
+if ($uri === "/confirmOrder-webHook") {
+    require $basePath . "/POST/confirmOrder-webHook.php";
+    exit;
+}
+if ($uri === "/closeSession-webHook") {
+    require $basePath . "/POST/closeSession-webHook.php";
+    exit;
+}
+if ($uri === "/bookTable-webHook") {
+    require $basePath . "/POST/bookTable-webHook.php";
+    exit;
+}
+
+
+
 /* PUT ROUTES */
 
 /* SECURE ROUTES */
+if ($uri === "/tenantConfig") {
+    require $basePath . "/SECURE/tenant-config.php";
+    exit;
+}
 if ($uri === "/flutterwave") {
     require $basePath . "/SECURE/flutterwave-key.php";
     exit;
 }
-
 if ($uri === "/sendReport") {
     require $basePath . "/SECURE/whatsappApi/sendReport.php";
     exit;
 }
-
 if ($uri === "/sendTelegramReport") {
     require $basePath . "/SECURE/sendTelegramReport.php";
+    exit;
+}
+if ($uri === "/zaraKeys") {
+    require $basePath . "/SECURE/zaraKeys.php";
     exit;
 }
 

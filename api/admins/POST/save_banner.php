@@ -1,11 +1,21 @@
 <?php
 require_once __DIR__ . "/../../SECURE/authGuard.php";
+require_once __DIR__ . "/../../SECURE/tenant.php";
 
-$data = file_get_contents("php://input");
+$tenant_id = getTenantId($conn);
 
-$filePath = __DIR__ . "/../../GET/JSON/banner.json";
+$data = json_decode(file_get_contents("php://input"), true);
 
-file_put_contents($filePath, $data);
+$address          = $data['address']          ?? '';
+$discount_title   = $data['discount_title']   ?? '';
+$discount_subtitle = $data['discount_subtitle'] ?? '';
+
+$stmt = $conn->prepare("
+    UPDATE banners 
+    SET address = ?, discount_title = ?, discount_subtitle = ?
+    WHERE tenant_id = ?
+");
+$stmt->bind_param("sssi", $address, $discount_title, $discount_subtitle, $tenant_id);
+$stmt->execute();
 
 echo json_encode(["status" => "success"]);
-?>
