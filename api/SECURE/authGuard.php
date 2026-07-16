@@ -7,7 +7,7 @@ $allowedOrigins = [
     "http://localhost:5173",
     "https://artisangrills-production.up.railway.app",
     "https://artisangrills.onrender.com",
-    "https://admin-artisangrilluxe.vercel.app",
+    "https://admin-de-arinas-pot.getenflowai.online",
     "https://app.getenflowai.online"
 ];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
