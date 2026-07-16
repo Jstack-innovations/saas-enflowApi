@@ -22,7 +22,11 @@ if (!$email) {
 $data   = json_decode(file_get_contents("php://input"), true);
 $amount = (int)($data["credits"] ?? 1);
 
-$ch = curl_init(CENTRAL_SERVER . "/deductCredits");
+//FOR PRODUCTION
+// $ch = curl_init(CENTRAL_SERVER . "/deductCredits");
+
+//FOR LOCAL
+$ch = curl_init(CENTRAL_SERVER . "/api/plans/POST/deductCredits.php");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,

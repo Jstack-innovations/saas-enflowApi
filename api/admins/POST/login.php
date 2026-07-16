@@ -54,7 +54,13 @@ if (!password_verify($password, $admin['password'])) {
 }
 
 // Verify subscription on central server
-$ch = curl_init(CENTRAL_SERVER . "/verifyAccess");
+
+//FOR PRODUCTION
+// $ch = curl_init(CENTRAL_SERVER . "/verifyAccess");
+
+//FOR LOCAL
+$ch = curl_init(CENTRAL_SERVER . "/api/plans/POST/verifyAccess.php");
+
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,

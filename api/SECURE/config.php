@@ -2,7 +2,7 @@
 require_once __DIR__ . '/env.php';
 
 // ----------------------------
-// Artisan Grills - PDO Config (ENV VERSION)
+// Enflow Saas - PDO Config (ENV VERSION)
 // ----------------------------
 
 $host = getenv("MYSQLHOST");

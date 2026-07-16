@@ -17,8 +17,12 @@ if (!$admin) {
 }
 
 $email = $admin['email'];
+//FOR PRODUCTION
+//$ch = curl_init(CENTRAL_SERVER . "/accountStatus");
 
-$ch = curl_init(CENTRAL_SERVER . "/accountStatus");
+//FOR DEVELOPMENT
+$ch = curl_init(CENTRAL_SERVER . "/api/plans/GET/CORS/accountStatus.php");
+
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,

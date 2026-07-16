@@ -18,6 +18,7 @@ require_once $file;
 require_once __DIR__ . '/../SECURE/tenant.php';
 
 $tenant_id = getTenantId($conn);
+$tenantName = getTenantName($conn, $tenant_id);
 
 $tenantStmt = $conn->prepare("SELECT notification_email, telegram_bot_token, telegram_chat_id FROM tenants WHERE id = ?");
 $tenantStmt->bind_param("i", $tenant_id);
@@ -76,7 +77,10 @@ if (!$user_id && $phone) {
 }
 
 $session_code = "TBL-" . $tableNo . "-" . strtoupper(substr(md5(uniqid()), 0, 5));
-$plate_no     = "Artisan" . date("Ymd") . "GRILL" . str_pad(rand(0, 99), 2, "0", STR_PAD_LEFT);
+$namePrefix = strtoupper(preg_replace('/[^A-Za-z]/', '', $tenantName));
+$namePrefix = substr($namePrefix, 0, 8);
+if ($namePrefix === '') { $namePrefix = 'TENANT'; }
+$plate_no = $namePrefix . date("Ymd") . str_pad(rand(0, 99), 2, "0", STR_PAD_LEFT);
 
 $conn->begin_transaction();
 

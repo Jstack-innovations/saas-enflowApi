@@ -182,6 +182,11 @@ if ($uri === "/bookTable-webHook") {
 /* PUT ROUTES */
 
 /* SECURE ROUTES */
+if ($uri === "/dbBackup") {
+    require $basePath . "/SECURE/databaseBackup.php";
+    exit;
+}
+
 if ($uri === "/tenantConfig") {
     require $basePath . "/SECURE/tenant-config.php";
     exit;
@@ -382,7 +387,7 @@ if ($uri === "/adminDeleteUser") {
 /* SUBSCRIPTION PLAN ROUTES */
 /*GET*/
 if ($uri === "/countdown") {
-    require $basePath . "/plans/GET/countdown.php";
+    require $basePath . "/plans/POST/countdown.php";
     exit;
 }
 

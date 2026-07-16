@@ -23,7 +23,11 @@ $data = json_decode($raw, true) ?? [];
 $data['email']     = $email;
 $data['tenant_id'] = $tenant_id;
 
-$ch = curl_init(CENTRAL_SERVER . "/zaraTopup");
+//FOR PRODUCTION
+// $ch = curl_init(CENTRAL_SERVER . "/zaraTopup");
+
+//FOR LOCAL
+$ch = curl_init(CENTRAL_SERVER . "/api/plans/POST/zara-topup.php");
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,

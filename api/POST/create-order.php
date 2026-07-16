@@ -18,6 +18,7 @@ require_once $file;
 require_once __DIR__ . '/../SECURE/tenant.php';
 
 $tenant_id = getTenantId($conn);
+$tenantName = getTenantName($conn, $tenant_id);
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -74,7 +75,11 @@ if (!$user_id && $phone) {
     }
 }
 
-$plate_no = "Artisan" . date("Ymd") . "GRILL" . str_pad(rand(0, 99), 2, "0", STR_PAD_LEFT);
+$namePrefix = strtoupper(preg_replace('/[^A-Za-z]/', '', $tenantName));
+$namePrefix = substr($namePrefix, 0, 8);
+if ($namePrefix === '') { $namePrefix = 'TENANT'; }
+$plate_no = $namePrefix . date("Ymd") . str_pad(rand(0, 99), 2, "0", STR_PAD_LEFT);
+
 
 $conn->begin_transaction();
 

@@ -2,14 +2,11 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Email, X-Tenant");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Email");
 
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(200); exit(); }
 
 require_once __DIR__ . "/../../SECURE/db.php";
-require_once __DIR__ . "/../../SECURE/tenant.php";
-
-$tenant_id = getTenantId($conn);
 
 // --- Verify email against admins table ---
 $email = $_SERVER["HTTP_X_USER_EMAIL"] ?? "";
@@ -19,8 +16,8 @@ if (empty($email)) {
     exit();
 }
 
-$check = $conn->prepare("SELECT id FROM admins WHERE LOWER(email) = LOWER(?) AND tenant_id = ?");
-$check->bind_param("si", $email, $tenant_id);
+$check = $conn->prepare("SELECT id FROM admins WHERE LOWER(email) = LOWER(?)");
+$check->bind_param("s", $email);
 $check->execute();
 $check->store_result();
 if ($check->num_rows === 0) {
@@ -31,25 +28,21 @@ if ($check->num_rows === 0) {
 $check->close();
 
 // --- Revenue today ---
-$stmtRev = $conn->prepare("SELECT SUM(total_amount) as total FROM paid_orders WHERE DATE(created_at) = CURDATE() AND tenant_id = ?");
-$stmtRev->bind_param("i", $tenant_id);
+$stmtRev = $conn->prepare("SELECT SUM(total_amount) as total FROM paid_orders WHERE DATE(created_at) = CURDATE()");
 $stmtRev->execute();
 $revenueToday = floatval($stmtRev->get_result()->fetch_assoc()['total'] ?? 0);
 
 // --- Orders today ---
-$stmtOrd = $conn->prepare("SELECT COUNT(*) as cnt FROM paid_orders WHERE DATE(created_at) = CURDATE() AND tenant_id = ?");
-$stmtOrd->bind_param("i", $tenant_id);
+$stmtOrd = $conn->prepare("SELECT COUNT(*) as cnt FROM paid_orders WHERE DATE(created_at) = CURDATE()");
 $stmtOrd->execute();
 $ordersToday = intval($stmtOrd->get_result()->fetch_assoc()['cnt'] ?? 0);
 
 // --- Tables seated + total from DB ---
-$stmtTotal = $conn->prepare("SELECT COUNT(*) as cnt FROM restaurant_tables WHERE tenant_id = ?");
-$stmtTotal->bind_param("i", $tenant_id);
+$stmtTotal = $conn->prepare("SELECT COUNT(*) as cnt FROM restaurant_tables");
 $stmtTotal->execute();
 $tablesTotal = intval($stmtTotal->get_result()->fetch_assoc()['cnt'] ?? 0);
 
-$stmtBooked = $conn->prepare("SELECT COUNT(*) as cnt FROM booked_tables WHERE booked = 1 AND tenant_id = ?");
-$stmtBooked->bind_param("i", $tenant_id);
+$stmtBooked = $conn->prepare("SELECT COUNT(*) as cnt FROM booked_tables WHERE booked = 1");
 $stmtBooked->execute();
 $tablesSeated = intval($stmtBooked->get_result()->fetch_assoc()['cnt'] ?? 0);
 
@@ -63,10 +56,9 @@ for ($i = 6; $i >= 0; $i--) {
 $stmtDaily = $conn->prepare("
     SELECT DATE(created_at) as order_date, SUM(total_amount) as total
     FROM paid_orders
-    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND tenant_id = ?
+    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
     GROUP BY DATE(created_at)
 ");
-$stmtDaily->bind_param("i", $tenant_id);
 $stmtDaily->execute();
 $resDaily = $stmtDaily->get_result();
 while ($row = $resDaily->fetch_assoc()) {
@@ -82,11 +74,9 @@ foreach ($dailyRevenue as $date => $total) {
 $stmtRecent = $conn->prepare("
     SELECT id, plate_order_no, table_no, order_type, total_amount, created_at, order_status, name, phone
     FROM paid_orders
-    WHERE tenant_id = ?
     ORDER BY created_at DESC
     LIMIT 6
 ");
-$stmtRecent->bind_param("i", $tenant_id);
 $stmtRecent->execute();
 $resRecent = $stmtRecent->get_result();
 
@@ -110,12 +100,11 @@ $stmtTop = $conn->prepare("
     SELECT i.menu_name, SUM(i.quantity) as total_qty
     FROM paid_order_items i
     JOIN paid_orders o ON i.paid_order_id = o.id
-    WHERE DATE(o.created_at) = CURDATE() AND o.tenant_id = ?
+    WHERE DATE(o.created_at) = CURDATE()
     GROUP BY i.menu_name
     ORDER BY total_qty DESC
     LIMIT 4
 ");
-$stmtTop->bind_param("i", $tenant_id);
 $stmtTop->execute();
 $resTop = $stmtTop->get_result();
 

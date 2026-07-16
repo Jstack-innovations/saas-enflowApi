@@ -15,9 +15,17 @@ $tenant_id = getTenantId($conn);
 $isHttps = (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
     || (isset($_SERVER["HTTP_X_FORWARDED_PROTO"]) && $_SERVER["HTTP_X_FORWARDED_PROTO"] === "https");
 
-$localUrl = ($isHttps ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"];
+//FOR PRODUCTION
+//$localUrl = ($isHttps ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"];
 
-$ch = curl_init(CENTRAL_SERVER . "/countdown");
+//FOR LOCAL
+$localUrl = ($isHttps ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . "/saas-enflowApi";
+
+//FOR PRODUCTION
+// $ch = curl_init(CENTRAL_SERVER . "/countdown");
+
+//FOR LOCAL
+$ch = curl_init(CENTRAL_SERVER . "/api/plans/POST/countdown.php");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
